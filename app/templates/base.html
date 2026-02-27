@@ -27,6 +27,14 @@
         </header>
 
         {% block content %}{% endblock %}
+
+        <footer class="site-footer">
+            <small>
+                made with ❤️ by <a href="https://github.com/traktuner" target="_blank" rel="noopener">traktuner</a>
+                · <a href="https://github.com/traktuner/stack-manager" target="_blank" rel="noopener">source</a>
+                · <code>{{ git_commit }}</code>
+            </small>
+        </footer>
     </main>
     <script src="/static/app.js"></script>
 </body>

@@ -23,6 +23,9 @@ COPY --from=docker-stage /usr/local/libexec/docker/cli-plugins/ /usr/local/libex
 # pass-cli (static binary)
 COPY --from=pass-stage /usr/local/bin/pass-cli /usr/local/bin/pass-cli
 
+ARG GIT_COMMIT=dev
+ENV GIT_COMMIT=${GIT_COMMIT}
+
 WORKDIR /app
 
 COPY requirements.txt .
