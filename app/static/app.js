@@ -112,7 +112,7 @@ function updateStatus() {
 
 // Proton Pass login flow
 function showPassLogin() {
-    var email = prompt("Proton email address:");
+    var email = prompt("Proton Mail address or username:");
     if (!email) return;
 
     var modalContent = document.getElementById("modal-content");
