@@ -151,9 +151,7 @@ async def stop_stack(name: str) -> process_service.TaskState:
 
 
 async def update_configs() -> process_service.TaskState:
-    """Git pull latest stack definitions with diagnostics."""
-    import os
-
+    """Git pull latest stack definitions."""
     git_dir = Path(DOCKER_APPS_PATH) / ".git"
     if not git_dir.is_dir():
         return await _error_task(
@@ -162,32 +160,7 @@ async def update_configs() -> process_service.TaskState:
         )
 
     async def _script(task: process_service.TaskState) -> int:
-        # Full diagnostics: show all git config with origins
-        task.lines.append("=== Git diagnostics ===\n\n")
-
-        task.lines.append("Remote URLs:\n")
-        await process_service.run_subprocess(
-            ["git", "-C", DOCKER_APPS_PATH, "remote", "-v"],
-            DOCKER_APPS_PATH, task,
-        )
-
-        # Show all config that might affect connectivity
-        task.lines.append("\nGit config (url/credential/ssh related):\n")
-        await process_service.run_subprocess(
-            ["git", "-C", DOCKER_APPS_PATH, "config", "--list", "--show-origin"],
-            DOCKER_APPS_PATH, task,
-        )
-
-        # Check env vars that affect git transport
-        task.lines.append("\nEnvironment:\n")
-        git_token = os.environ.get("GIT_TOKEN", "")
-        task.lines.append(f"  GIT_TOKEN: {'set (' + str(len(git_token)) + ' chars)' if git_token else 'NOT SET'}\n")
-        for var in ("GIT_SSH", "GIT_SSH_COMMAND", "SSH_AUTH_SOCK"):
-            val = os.environ.get(var, "")
-            if val:
-                task.lines.append(f"  {var}: {val}\n")
-
-        # Check if remote uses SSH and auto-fix
+        # Detect remote URL to decide if we need SSH→HTTPS override
         git_config_file = Path(DOCKER_APPS_PATH) / ".git" / "config"
         remote_url = ""
         try:
@@ -199,35 +172,23 @@ async def update_configs() -> process_service.TaskState:
         except Exception:
             pass
 
+        # Build git pull command with temporary SSH→HTTPS override if needed
+        # Uses git -c so .git/config is NOT modified (keeps server's SSH URL intact)
+        git_cmd = ["git", "-C", DOCKER_APPS_PATH]
+
         if remote_url.startswith("git@") or remote_url.startswith("ssh://"):
-            https_url = remote_url
-            if remote_url.startswith("git@"):
-                https_url = remote_url.replace(":", "/").replace("git@", "https://")
             task.lines.append(
-                f"\nRemote uses SSH but SSH is not available in this container.\n"
-                f"  old: {remote_url}\n"
-                f"  new: {https_url}\n"
+                f"Remote uses SSH ({remote_url})\n"
+                f"Using temporary HTTPS override (not modifying .git/config)\n\n"
             )
-            code = await process_service.run_subprocess(
-                ["git", "-C", DOCKER_APPS_PATH, "remote", "set-url", "origin", https_url],
-                DOCKER_APPS_PATH, task,
-            )
-            if code != 0:
-                task.lines.append("Failed to update remote URL.\n")
-                return code
-            task.lines.append("Remote URL updated to HTTPS.\n")
+            git_cmd.extend([
+                "-c", "url.https://github.com/.insteadOf=git@github.com:",
+                "-c", "url.https://github.com/.insteadOf=ssh://git@github.com/",
+            ])
 
-        # Remove any insteadOf rules that rewrite HTTPS to SSH
-        task.lines.append("\nChecking for URL rewrite rules...\n")
+        task.lines.append("Running git pull...\n")
         code = await process_service.run_subprocess(
-            ["git", "-C", DOCKER_APPS_PATH, "config", "--get-regexp", "url\\..*\\.insteadof"],
-            DOCKER_APPS_PATH, task,
-        )
-        # git config --get-regexp returns 1 if no match (that's fine)
-
-        task.lines.append("\n=== Running git pull ===\n")
-        code = await process_service.run_subprocess(
-            ["git", "-C", DOCKER_APPS_PATH, "pull", "--ff-only"],
+            [*git_cmd, "pull", "--ff-only"],
             DOCKER_APPS_PATH, task,
         )
         if code == 0:
