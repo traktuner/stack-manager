@@ -1,0 +1,46 @@
+{% for stack in stacks %}
+<article class="stack-card stack-{{ stack.status.state }}">
+    <div class="stack-header">
+        <div class="stack-info">
+            <strong>{{ stack.name }}</strong>
+            <small>
+                <kbd class="mode-{{ stack.mode }}">{{ stack.mode }}</kbd>
+                {% if stack.status.state == "running" %}
+                    <span class="badge-running">{{ stack.status.running }}/{{ stack.status.total }} running</span>
+                {% elif stack.status.state == "partial" %}
+                    <span class="badge-partial">{{ stack.status.running }}/{{ stack.status.total }} running</span>
+                {% else %}
+                    <span class="badge-stopped">stopped</span>
+                {% endif %}
+            </small>
+        </div>
+        <div class="stack-actions">
+            {% if stack.is_self %}
+                <button disabled title="Cannot control stack-manager from within itself">self</button>
+            {% elif stack.busy %}
+                <button aria-busy="true" disabled>busy</button>
+            {% elif stack.status.state in ("running", "partial") %}
+                <button class="outline contrast"
+                        hx-post="/api/stacks/{{ stack.name }}/stop"
+                        hx-target="#command-output"
+                        hx-swap="innerHTML">Stop</button>
+            {% else %}
+                <button class="outline"
+                        hx-post="/api/stacks/{{ stack.name }}/start"
+                        hx-target="#command-output"
+                        hx-swap="innerHTML">Start</button>
+            {% endif %}
+        </div>
+    </div>
+    {% if stack.status.containers and stack.status.state != "stopped" %}
+    <div class="stack-containers">
+        {% for c in stack.status.containers %}
+        <small class="container-pill container-{{ c.status }}">
+            {{ c.name }}
+            {% if c.health != "n/a" %}<span class="health-{{ c.health }}">{{ c.health }}</span>{% endif %}
+        </small>
+        {% endfor %}
+    </div>
+    {% endif %}
+</article>
+{% endfor %}

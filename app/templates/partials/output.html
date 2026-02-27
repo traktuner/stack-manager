@@ -1,0 +1,6 @@
+<div class="output-header">
+    <code>$ {{ command }}</code>
+    <span id="output-status" aria-busy="true">running</span>
+</div>
+<pre class="output-pre" id="output-pre"></pre>
+<script>connectStream("{{ task_id }}")</script>
