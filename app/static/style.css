@@ -178,6 +178,12 @@ main.container-fluid {
     word-break: break-all;
 }
 
+.output-pre a {
+    color: #6db3f2;
+    text-decoration: underline;
+    word-break: break-all;
+}
+
 .output-header {
     display: flex;
     justify-content: space-between;

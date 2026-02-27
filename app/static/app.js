@@ -48,7 +48,18 @@ function connectStream(taskId) {
     var source = new EventSource("/api/stream/" + taskId);
 
     source.addEventListener("output", function (e) {
-        pre.textContent += e.data + "\n";
+        var text = e.data + "\n";
+        // Linkify URLs
+        var urlRegex = /(https?:\/\/[^\s<]+)/g;
+        if (urlRegex.test(text)) {
+            var span = document.createElement("span");
+            span.innerHTML = text
+                .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+                .replace(urlRegex, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+            pre.appendChild(span);
+        } else {
+            pre.appendChild(document.createTextNode(text));
+        }
         pre.scrollTop = pre.scrollHeight;
     });
 

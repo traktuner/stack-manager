@@ -157,6 +157,10 @@ async def pass_login(request: Request):
             "</div>"
         )
 
+    # Ensure pass-cli subdirectories exist (pass-cli doesn't create them itself)
+    for d in [data_dir / "proton-pass-cli", config_dir / "proton-pass-cli"]:
+        d.mkdir(parents=True, exist_ok=True)
+
     form = await request.form()
     email = form.get("email", "").strip()
     if not email:
