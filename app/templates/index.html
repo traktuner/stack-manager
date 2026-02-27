@@ -34,4 +34,25 @@
         </div>
     </article>
 </dialog>
+
+<dialog id="logs-modal">
+    <article>
+        <header>
+            <button aria-label="Close" rel="prev" onclick="closeLogsModal()"></button>
+            <span class="logs-title" id="logs-title">Container Logs</span>
+        </header>
+        <div class="logs-body">
+            <div class="logs-controls">
+                <select id="logs-lines" onchange="reloadLogs()">
+                    <option value="50">50 lines</option>
+                    <option value="100" selected>100 lines</option>
+                    <option value="500">500 lines</option>
+                    <option value="1000">1000 lines</option>
+                </select>
+                <button class="outline secondary" onclick="reloadLogs()">Refresh</button>
+            </div>
+            <pre class="logs-pre" id="logs-pre"><span aria-busy="true">Loading...</span></pre>
+        </div>
+    </article>
+</dialog>
 {% endblock %}

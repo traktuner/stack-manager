@@ -207,6 +207,12 @@ async def pass_login(request: Request):
     })
 
 
+@router.get("/api/containers/{name}/logs")
+async def container_logs(name: str, lines: int = 100):
+    logs = docker_service.get_container_logs(name, tail=lines)
+    return {"container": name, "logs": logs}
+
+
 @router.get("/api/status")
 async def status():
     stacks = stack_service.list_stacks()

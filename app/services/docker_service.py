@@ -81,6 +81,19 @@ def get_stack_status(service_names: list[str], all_statuses: dict[str, Container
     return {"state": state, "running": running, "total": total, "containers": containers}
 
 
+def get_container_logs(name: str, tail: int = 100) -> str:
+    """Return the last N lines of logs for a container."""
+    try:
+        client = _get_client()
+        container = client.containers.get(name)
+        logs = container.logs(tail=tail, timestamps=True).decode("utf-8", errors="replace")
+        return logs
+    except docker.errors.NotFound:
+        return f"Container '{name}' not found."
+    except Exception as e:
+        return f"Error fetching logs: {e}"
+
+
 async def check_pass_cli() -> bool:
     """Check if pass-cli session is active."""
     if not shutil.which("pass-cli"):

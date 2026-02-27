@@ -162,6 +162,52 @@ function showPassLogin() {
         });
 }
 
+// Container logs viewer
+var currentLogsContainer = "";
+
+function showLogs(containerName) {
+    currentLogsContainer = containerName;
+    var title = document.getElementById("logs-title");
+    var pre = document.getElementById("logs-pre");
+    if (title) title.textContent = containerName + " — Logs";
+    if (pre) pre.innerHTML = '<span aria-busy="true">Loading...</span>';
+    var modal = document.getElementById("logs-modal");
+    if (modal) modal.showModal();
+    reloadLogs();
+}
+
+function closeLogsModal() {
+    var modal = document.getElementById("logs-modal");
+    if (modal) modal.close();
+    currentLogsContainer = "";
+}
+
+function reloadLogs() {
+    if (!currentLogsContainer) return;
+    var lines = document.getElementById("logs-lines");
+    var tail = lines ? lines.value : "100";
+    var pre = document.getElementById("logs-pre");
+    if (pre) pre.innerHTML = '<span aria-busy="true">Loading...</span>';
+
+    fetch("/api/containers/" + encodeURIComponent(currentLogsContainer) + "/logs?lines=" + tail)
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (pre) {
+                pre.textContent = data.logs || "No logs available.";
+                pre.scrollTop = pre.scrollHeight;
+            }
+        })
+        .catch(function () {
+            if (pre) pre.textContent = "Failed to fetch logs.";
+        });
+}
+
+// Close logs modal on backdrop click
+document.addEventListener("click", function (e) {
+    var m = document.getElementById("logs-modal");
+    if (e.target === m) closeLogsModal();
+});
+
 // Update status on load and every 30s
 updateStatus();
 setInterval(updateStatus, 30000);
