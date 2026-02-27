@@ -1,14 +1,14 @@
 # --- Stage 1: Docker CLI + Compose plugin binaries ---
-FROM docker:27-cli AS docker-stage
+FROM docker:cli AS docker-stage
 
 # --- Stage 2: pass-cli binary ---
-FROM debian:bookworm AS pass-stage
+FROM debian:stable-slim AS pass-stage
 ENV PROTON_PASS_CLI_INSTALL_DIR=/usr/local/bin
 RUN apt-get update && apt-get install -y curl ca-certificates jq \
     && curl -fsSL https://proton.me/download/pass-cli/install.sh | bash
 
 # --- Stage 3: Final image ---
-FROM python:3.12-slim
+FROM python:3-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
