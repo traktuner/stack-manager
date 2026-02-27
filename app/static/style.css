@@ -392,6 +392,7 @@ header::after {
 #output-modal article {
     margin: 0;
     max-height: 80vh;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
 }
@@ -415,6 +416,7 @@ header::after {
 .output-pre {
     max-height: 50vh;
     overflow-y: auto;
+    overflow-x: hidden;
     font-size: 0.75rem;
     padding: 0.5rem;
     margin: 0;
@@ -422,6 +424,7 @@ header::after {
     border-radius: 4px;
     white-space: pre-wrap;
     word-break: break-all;
+    overflow-wrap: anywhere;
 }
 
 .output-pre a {
