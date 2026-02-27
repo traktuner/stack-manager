@@ -9,14 +9,18 @@
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
 </head>
 <body>
-    <main class="container">
+    <main class="container-fluid">
         <header>
             <nav>
                 <ul>
                     <li><strong>Stack Manager</strong></li>
                 </ul>
                 <ul>
-                    <li><kbd id="pass-badge">Pass: ...</kbd></li>
+                    <li>
+                        <kbd id="pass-badge">Proton Pass: ...</kbd>
+                        <button id="pass-login-btn" class="outline secondary pass-login-btn" style="display:none"
+                                onclick="showPassLogin()">Login</button>
+                    </li>
                     <li><kbd id="stacks-badge">Stacks: ...</kbd></li>
                 </ul>
             </nav>

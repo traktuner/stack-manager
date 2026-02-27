@@ -6,8 +6,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
-from app.config import DOCKER_APPS_PATH, MGMT_SCRIPT, SELF_STACK_NAME
-from app.services import docker_service, process_service, stack_service
+from app.services import docker_service, mgmt_service, process_service, stack_service
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
@@ -57,15 +56,11 @@ async def start_stack(name: str, request: Request):
     if stack.is_self:
         return HTMLResponse('<div class="output-error">Cannot start stack-manager from within itself.</div>')
 
-    task = await process_service.run_mgmt_command(
-        [MGMT_SCRIPT, "use", name],
-        stack_name=name,
-        cwd=DOCKER_APPS_PATH,
-    )
+    task = await mgmt_service.start_stack(name)
     return templates.TemplateResponse("partials/output.html", {
         "request": request,
         "task_id": task.task_id,
-        "command": f"mgmt.sh use {name}",
+        "command": f"start {name}",
     })
 
 
@@ -76,59 +71,73 @@ async def stop_stack(name: str, request: Request):
         return HTMLResponse(f'<div class="output-error">Stack "{name}" not found.</div>', status_code=404)
 
     if stack.is_self:
-        return HTMLResponse('<div class="output-error">Cannot stop stack-manager from within itself. Use the CLI.</div>')
+        return HTMLResponse('<div class="output-error">Cannot stop stack-manager from within itself.</div>')
 
-    task = await process_service.run_mgmt_command(
-        [MGMT_SCRIPT, "stop", name],
-        stack_name=name,
-        cwd=DOCKER_APPS_PATH,
-    )
+    task = await mgmt_service.stop_stack(name)
     return templates.TemplateResponse("partials/output.html", {
         "request": request,
         "task_id": task.task_id,
-        "command": f"mgmt.sh stop {name}",
+        "command": f"stop {name}",
     })
 
 
 @router.post("/api/stacks/upgrade", response_class=HTMLResponse)
 async def upgrade_all(request: Request):
-    task = await process_service.run_mgmt_command(
-        [MGMT_SCRIPT, "upgrade"],
-        stack_name="__upgrade__",
-        cwd=DOCKER_APPS_PATH,
-    )
+    task = await mgmt_service.upgrade_all()
     return templates.TemplateResponse("partials/output.html", {
         "request": request,
         "task_id": task.task_id,
-        "command": "mgmt.sh upgrade",
+        "command": "upgrade all",
     })
 
 
 @router.post("/api/stacks/pull", response_class=HTMLResponse)
 async def pull_all(request: Request):
-    task = await process_service.run_mgmt_command(
-        [MGMT_SCRIPT, "pull"],
-        stack_name="__pull__",
-        cwd=DOCKER_APPS_PATH,
-    )
+    task = await mgmt_service.pull_images()
     return templates.TemplateResponse("partials/output.html", {
         "request": request,
         "task_id": task.task_id,
-        "command": "mgmt.sh pull",
+        "command": "pull images",
     })
 
 
 @router.post("/api/cleanup", response_class=HTMLResponse)
 async def cleanup(request: Request):
-    task = await process_service.run_mgmt_command(
-        [MGMT_SCRIPT, "cleanup"],
-        stack_name="__cleanup__",
-        cwd=DOCKER_APPS_PATH,
+    task = await mgmt_service.cleanup()
+    return templates.TemplateResponse("partials/output.html", {
+        "request": request,
+        "task_id": task.task_id,
+        "command": "docker system prune",
+    })
+
+
+@router.post("/api/update", response_class=HTMLResponse)
+async def update_configs(request: Request):
+    task = await mgmt_service.update_configs()
+    return templates.TemplateResponse("partials/output.html", {
+        "request": request,
+        "task_id": task.task_id,
+        "command": "git pull",
+    })
+
+
+@router.post("/api/pass/login", response_class=HTMLResponse)
+async def pass_login(request: Request):
+    form = await request.form()
+    email = form.get("email", "").strip()
+    if not email:
+        return HTMLResponse('<div class="output-error">Email is required.</div>')
+
+    task = await process_service.run_command(
+        ["pass-cli", "login", email],
+        stack_name="__pass_login__",
+        cwd="/tmp",
+        label=f"pass-cli login {email}",
     )
     return templates.TemplateResponse("partials/output.html", {
         "request": request,
         "task_id": task.task_id,
-        "command": "mgmt.sh cleanup",
+        "command": f"pass-cli login {email}",
     })
 
 

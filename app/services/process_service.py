@@ -4,6 +4,7 @@ import asyncio
 import re
 import uuid
 from dataclasses import dataclass, field
+from typing import Callable, Awaitable
 
 ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
 
@@ -39,14 +40,36 @@ def is_stack_busy(stack_name: str) -> bool:
     return lock is not None and lock.locked()
 
 
-async def run_mgmt_command(args: list[str], stack_name: str, cwd: str) -> TaskState:
-    """Run a mgmt.sh command asynchronously, streaming output into a TaskState."""
+async def run_subprocess(args: list[str], cwd: str, task: TaskState) -> int:
+    """Run a subprocess, streaming output into an existing TaskState. Returns exit code."""
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            *args,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
+            cwd=cwd,
+        )
+        while True:
+            line = await proc.stdout.readline()
+            if not line:
+                break
+            text = ANSI_RE.sub("", line.decode("utf-8", errors="replace"))
+            task.lines.append(text)
+        await proc.wait()
+        return proc.returncode
+    except Exception as exc:
+        task.lines.append(f"Error: {exc}\n")
+        return 1
+
+
+async def run_command(args: list[str], stack_name: str, cwd: str, label: str = "") -> TaskState:
+    """Run a single command asynchronously, streaming output into a TaskState."""
     lock = _get_lock(stack_name)
     if lock.locked():
         task_id = str(uuid.uuid4())
         ts = TaskState(
             task_id=task_id,
-            command=" ".join(args),
+            command=label or " ".join(args),
             stack_name=stack_name,
         )
         ts.lines.append(f"Stack {stack_name} is already busy.\n")
@@ -58,7 +81,48 @@ async def run_mgmt_command(args: list[str], stack_name: str, cwd: str) -> TaskSt
     task_id = str(uuid.uuid4())
     ts = TaskState(
         task_id=task_id,
-        command=" ".join(args),
+        command=label or " ".join(args),
+        stack_name=stack_name,
+    )
+    _tasks[task_id] = ts
+
+    async def _run():
+        async with lock:
+            ts.exit_code = await run_subprocess(args, cwd, ts)
+            ts.done = True
+
+    asyncio.create_task(_run())
+    await asyncio.sleep(0.05)
+    return ts
+
+
+async def run_script(
+    script_fn: Callable[[TaskState], Awaitable[int]],
+    stack_name: str,
+    label: str,
+) -> TaskState:
+    """Run a multi-step async script, streaming output into a TaskState.
+
+    script_fn receives the TaskState (to append lines) and returns an exit code.
+    """
+    lock = _get_lock(stack_name)
+    if lock.locked():
+        task_id = str(uuid.uuid4())
+        ts = TaskState(
+            task_id=task_id,
+            command=label,
+            stack_name=stack_name,
+        )
+        ts.lines.append(f"Operation '{stack_name}' is already running.\n")
+        ts.done = True
+        ts.exit_code = 1
+        _tasks[task_id] = ts
+        return ts
+
+    task_id = str(uuid.uuid4())
+    ts = TaskState(
+        task_id=task_id,
+        command=label,
         stack_name=stack_name,
     )
     _tasks[task_id] = ts
@@ -66,20 +130,7 @@ async def run_mgmt_command(args: list[str], stack_name: str, cwd: str) -> TaskSt
     async def _run():
         async with lock:
             try:
-                proc = await asyncio.create_subprocess_exec(
-                    *args,
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.STDOUT,
-                    cwd=cwd,
-                )
-                while True:
-                    line = await proc.stdout.readline()
-                    if not line:
-                        break
-                    text = ANSI_RE.sub("", line.decode("utf-8", errors="replace"))
-                    ts.lines.append(text)
-                await proc.wait()
-                ts.exit_code = proc.returncode
+                ts.exit_code = await script_fn(ts)
             except Exception as exc:
                 ts.lines.append(f"Error: {exc}\n")
                 ts.exit_code = 1
@@ -87,7 +138,5 @@ async def run_mgmt_command(args: list[str], stack_name: str, cwd: str) -> TaskSt
                 ts.done = True
 
     asyncio.create_task(_run())
-
-    # Give the subprocess a moment to start
     await asyncio.sleep(0.05)
     return ts

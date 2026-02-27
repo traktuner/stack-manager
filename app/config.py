@@ -1,6 +1,12 @@
 import os
+import shutil
 
 DOCKER_APPS_PATH = os.getenv("DOCKER_APPS_PATH", "/data/docker-apps")
-MGMT_SCRIPT = os.getenv("MGMT_SCRIPT", f"{DOCKER_APPS_PATH}/mgmt.sh")
 PASS_VAULT = os.getenv("PASS_VAULT", "docker-secrets")
 SELF_STACK_NAME = "stack-manager"
+
+# Auto-detect docker compose command
+if shutil.which("docker") and os.system("docker compose version >/dev/null 2>&1") == 0:
+    COMPOSE_CMD = ["docker", "compose"]
+else:
+    COMPOSE_CMD = ["docker-compose"]

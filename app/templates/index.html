@@ -3,13 +3,16 @@
 {% block content %}
 <section id="actions">
     <div class="grid">
-        <button class="secondary" hx-post="/api/stacks/upgrade" hx-target="#command-output" hx-swap="innerHTML">
+        <button class="secondary" hx-post="/api/stacks/upgrade" hx-target="#modal-content" hx-swap="innerHTML">
             Upgrade All
         </button>
-        <button class="secondary" hx-post="/api/stacks/pull" hx-target="#command-output" hx-swap="innerHTML">
+        <button class="secondary" hx-post="/api/stacks/pull" hx-target="#modal-content" hx-swap="innerHTML">
             Pull All
         </button>
-        <button class="secondary outline" hx-post="/api/cleanup" hx-target="#command-output" hx-swap="innerHTML"
+        <button class="secondary" hx-post="/api/update" hx-target="#modal-content" hx-swap="innerHTML">
+            Update
+        </button>
+        <button class="secondary outline" hx-post="/api/cleanup" hx-target="#modal-content" hx-swap="innerHTML"
                 hx-confirm="Run docker system prune? This removes unused images, containers, and volumes.">
             Cleanup
         </button>
@@ -20,12 +23,15 @@
     <article aria-busy="true">Loading stacks...</article>
 </section>
 
-<section id="output-section">
-    <details open>
-        <summary>Command Output</summary>
-        <div id="command-output">
+<dialog id="output-modal">
+    <article>
+        <header>
+            <button aria-label="Close" rel="prev" onclick="closeModal()"></button>
+            <span id="modal-title">Command Output</span>
+        </header>
+        <div id="modal-content">
             <pre class="output-pre">No command running.</pre>
         </div>
-    </details>
-</section>
+    </article>
+</dialog>
 {% endblock %}

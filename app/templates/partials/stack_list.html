@@ -1,10 +1,23 @@
+{% set ns = namespace(shown_divider=false, has_active=false) %}
 {% for stack in stacks %}
+    {% if stack.status.state in ("running", "partial") %}
+        {% set ns.has_active = true %}
+    {% endif %}
+{% endfor %}
+
+{% for stack in stacks %}
+{% if stack.status.state == "stopped" and not ns.shown_divider and ns.has_active %}
+    {% set ns.shown_divider = true %}
+    <div class="stopped-divider"><small>Stopped</small></div>
+{% endif %}
 <article class="stack-card stack-{{ stack.status.state }}">
     <div class="stack-header">
         <div class="stack-info">
             <strong>{{ stack.name }}</strong>
             <small>
-                <kbd class="mode-{{ stack.mode }}">{{ stack.mode }}</kbd>
+                {% if stack.mode == "pass" %}
+                    <kbd class="mode-pass">pass</kbd>
+                {% endif %}
                 {% if stack.status.state == "running" %}
                     <span class="badge-running">{{ stack.status.running }}/{{ stack.status.total }} running</span>
                 {% elif stack.status.state == "partial" %}
@@ -22,12 +35,12 @@
             {% elif stack.status.state in ("running", "partial") %}
                 <button class="outline contrast"
                         hx-post="/api/stacks/{{ stack.name }}/stop"
-                        hx-target="#command-output"
+                        hx-target="#modal-content"
                         hx-swap="innerHTML">Stop</button>
             {% else %}
                 <button class="outline"
                         hx-post="/api/stacks/{{ stack.name }}/start"
-                        hx-target="#command-output"
+                        hx-target="#modal-content"
                         hx-swap="innerHTML">Start</button>
             {% endif %}
         </div>

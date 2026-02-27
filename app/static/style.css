@@ -1,41 +1,54 @@
+/* Layout */
+main.container-fluid {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
 /* Stack cards */
 .stack-card {
-    padding: 0.75rem 1rem;
-    margin-bottom: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.35rem;
 }
 
 .stack-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 1rem;
+    gap: 0.5rem;
 }
 
 .stack-info {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
     flex-wrap: wrap;
+    min-width: 0;
+}
+
+.stack-info strong {
+    font-size: 0.9rem;
 }
 
 .stack-actions button {
     margin: 0;
-    padding: 0.25rem 0.75rem;
-    font-size: 0.85rem;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.8rem;
 }
 
 /* Container pills */
 .stack-containers {
-    margin-top: 0.5rem;
+    margin-top: 0.35rem;
     display: flex;
-    gap: 0.5rem;
+    gap: 0.35rem;
     flex-wrap: wrap;
 }
 
 .container-pill {
-    padding: 0.15rem 0.5rem;
+    padding: 0.1rem 0.4rem;
     border-radius: 4px;
     background: var(--pico-muted-border-color);
+    font-size: 0.7rem;
 }
 
 .container-running {
@@ -44,35 +57,30 @@
 
 .container-exited {
     border-left: 3px solid #95a5a6;
-    opacity: 0.7;
+    opacity: 0.6;
 }
 
 /* Status badges */
 .badge-running {
     color: #2ecc71;
+    font-size: 0.75rem;
 }
 
 .badge-partial {
     color: #f39c12;
+    font-size: 0.75rem;
 }
 
 .badge-stopped {
     color: #95a5a6;
+    font-size: 0.75rem;
 }
 
-/* Mode badges */
+/* Mode badge — only "pass" is shown */
 .mode-pass {
     background: #2c3e50;
-    font-size: 0.75rem;
-}
-
-.mode-legacy {
-    background: #7f8c8d;
-    font-size: 0.75rem;
-}
-
-.mode-none {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
+    padding: 0.05rem 0.4rem;
 }
 
 /* Health */
@@ -99,19 +107,70 @@
 
 .stack-stopped {
     border-left: 3px solid transparent;
-    opacity: 0.8;
+    opacity: 0.45;
 }
 
-/* Output section */
-#output-section {
-    margin-top: 1rem;
+.stack-stopped:hover {
+    opacity: 0.7;
+}
+
+/* Stopped divider */
+.stopped-divider {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0.75rem 0 0.35rem;
+    color: var(--pico-muted-color);
+}
+
+.stopped-divider small {
+    white-space: nowrap;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.stopped-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--pico-muted-border-color);
+}
+
+/* Output modal */
+#output-modal {
+    max-width: min(700px, 95vw);
+    width: 100%;
+}
+
+#output-modal article {
+    margin: 0;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+
+#output-modal article header {
+    padding: 0.75rem 1rem;
+    margin-bottom: 0;
+}
+
+#output-modal #modal-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+#output-modal #modal-content {
+    overflow-y: auto;
+    flex: 1;
+    padding: 0 1rem 1rem;
 }
 
 .output-pre {
-    max-height: 400px;
+    max-height: 50vh;
     overflow-y: auto;
-    font-size: 0.8rem;
-    padding: 0.75rem;
+    font-size: 0.75rem;
+    padding: 0.5rem;
     margin: 0;
     background: var(--pico-code-background-color);
     border-radius: 4px;
@@ -123,7 +182,8 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.35rem;
+    font-size: 0.85rem;
 }
 
 .output-error {
@@ -140,17 +200,23 @@
 }
 
 /* Actions bar */
+#actions {
+    margin-bottom: 0.5rem;
+}
+
 #actions .grid {
     margin-bottom: 0;
+    gap: 0.5rem;
 }
 
 #actions button {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
+    padding: 0.4rem 0.5rem;
 }
 
 /* Header badges */
 nav kbd {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
 }
 
 #pass-badge.pass-ok {
@@ -159,4 +225,51 @@ nav kbd {
 
 #pass-badge.pass-fail {
     color: #e74c3c;
+}
+
+.pass-login-btn {
+    margin: 0 0 0 0.35rem;
+    padding: 0.1rem 0.4rem;
+    font-size: 0.65rem;
+    vertical-align: middle;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    main.container-fluid {
+        padding: 0 0.5rem;
+    }
+
+    nav ul:first-child li strong {
+        font-size: 0.9rem;
+    }
+
+    nav ul:last-child {
+        gap: 0.25rem;
+    }
+
+    #actions .grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.35rem;
+    }
+
+    .stack-card {
+        padding: 0.4rem 0.6rem;
+    }
+
+    .stack-info strong {
+        font-size: 0.85rem;
+    }
+
+    #output-modal {
+        max-width: 98vw;
+        margin: 0.5rem auto;
+    }
+}
+
+/* Large desktop */
+@media (min-width: 1200px) {
+    main.container-fluid {
+        padding: 0 2rem;
+    }
 }

@@ -1,11 +1,51 @@
+// Modal handling
+var modal = null;
+
+function getModal() {
+    if (!modal) modal = document.getElementById("output-modal");
+    return modal;
+}
+
+function openModal() {
+    var m = getModal();
+    if (m) m.showModal();
+}
+
+function closeModal() {
+    var m = getModal();
+    if (m) m.close();
+}
+
+// Auto-open modal when command output is swapped in
+document.body.addEventListener("htmx:afterSwap", function (e) {
+    if (e.detail.target && e.detail.target.id === "modal-content") {
+        openModal();
+    }
+});
+
+// Close modal on backdrop click
+document.addEventListener("click", function (e) {
+    var m = getModal();
+    if (e.target === m) {
+        closeModal();
+    }
+});
+
+// Close modal on Escape key
+document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") {
+        closeModal();
+    }
+});
+
 // SSE stream handler for command output
 function connectStream(taskId) {
-    const pre = document.getElementById("output-pre");
-    const status = document.getElementById("output-status");
+    var pre = document.getElementById("output-pre");
+    var status = document.getElementById("output-status");
     if (!pre) return;
 
     pre.textContent = "";
-    const source = new EventSource("/api/stream/" + taskId);
+    var source = new EventSource("/api/stream/" + taskId);
 
     source.addEventListener("output", function (e) {
         pre.textContent += e.data + "\n";
@@ -14,7 +54,7 @@ function connectStream(taskId) {
 
     source.addEventListener("done", function (e) {
         source.close();
-        const code = parseInt(e.data);
+        var code = parseInt(e.data);
         if (status) {
             status.removeAttribute("aria-busy");
             if (code === 0) {
@@ -25,10 +65,9 @@ function connectStream(taskId) {
                 status.className = "output-fail";
             }
         }
-        // Refresh stack list after command completes
-        setTimeout(function () {
-            htmx.trigger("#stack-list", "refresh");
-        }, 500);
+        // Refresh stack list and status after command completes
+        refreshStacks();
+        updateStatus();
     });
 
     source.addEventListener("error", function () {
@@ -41,6 +80,14 @@ function connectStream(taskId) {
     });
 }
 
+// Refresh the stack list via HTMX
+function refreshStacks() {
+    var el = document.getElementById("stack-list");
+    if (el) {
+        htmx.ajax("GET", "/api/stacks", { target: "#stack-list", swap: "innerHTML" });
+    }
+}
+
 // Fetch and update status badges
 function updateStatus() {
     fetch("/api/status")
@@ -48,9 +95,13 @@ function updateStatus() {
         .then(function (data) {
             var passBadge = document.getElementById("pass-badge");
             var stacksBadge = document.getElementById("stacks-badge");
+            var loginBtn = document.getElementById("pass-login-btn");
             if (passBadge) {
-                passBadge.textContent = "Pass: " + data.pass_cli;
+                passBadge.textContent = "Proton Pass: " + data.pass_cli;
                 passBadge.className = data.pass_cli === "ok" ? "pass-ok" : "pass-fail";
+            }
+            if (loginBtn) {
+                loginBtn.style.display = data.pass_cli === "ok" ? "none" : "inline-block";
             }
             if (stacksBadge) {
                 stacksBadge.textContent = data.stacks_active + "/" + data.stacks_total + " active";
@@ -59,12 +110,48 @@ function updateStatus() {
         .catch(function () { });
 }
 
+// Proton Pass login flow
+function showPassLogin() {
+    var email = prompt("Proton email address:");
+    if (!email) return;
+
+    var modalContent = document.getElementById("modal-content");
+    if (modalContent) {
+        modalContent.innerHTML = '<div class="output-header"><code>$ pass-cli login ' + email + '</code><span id="output-status" aria-busy="true">running</span></div><pre class="output-pre" id="output-pre"></pre>';
+    }
+    openModal();
+
+    fetch("/api/pass/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "email=" + encodeURIComponent(email),
+    })
+        .then(function (r) { return r.text(); })
+        .then(function (html) {
+            if (document.getElementById("modal-content")) {
+                document.getElementById("modal-content").innerHTML = html;
+                // Process any scripts in the response (for connectStream)
+                var scripts = document.getElementById("modal-content").querySelectorAll("script");
+                scripts.forEach(function (s) {
+                    var newScript = document.createElement("script");
+                    newScript.textContent = s.textContent;
+                    document.body.appendChild(newScript);
+                    document.body.removeChild(newScript);
+                });
+            }
+        })
+        .catch(function () {
+            if (document.getElementById("modal-content")) {
+                document.getElementById("modal-content").innerHTML = '<div class="output-error">Failed to start login.</div>';
+            }
+        });
+}
+
 // Update status on load and every 30s
 updateStatus();
 setInterval(updateStatus, 30000);
 
 // Also refresh stack list on htmx refresh events
 document.body.addEventListener("refresh", function () {
-    var el = document.getElementById("stack-list");
-    if (el) htmx.trigger(el, "load");
+    refreshStacks();
 });
