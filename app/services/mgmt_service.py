@@ -306,6 +306,11 @@ async def upgrade_service(stack_name: str, service_name: str) -> process_service
             )
 
         if code == 0:
+            # Clean up dangling images left behind by the pull
+            task.lines.append("Cleaning up old images...\n")
+            await process_service.run_subprocess(
+                ["docker", "image", "prune", "-f"], cwd, task,
+            )
             task.lines.append(f"[{stack_name}/{service_name}] Upgrade complete.\n")
         else:
             task.lines.append(f"[{stack_name}/{service_name}] Upgrade failed.\n")
