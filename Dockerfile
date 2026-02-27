@@ -8,19 +8,18 @@ RUN apt-get update && apt-get install -y curl ca-certificates jq \
     && curl -fsSL https://proton.me/download/pass-cli/install.sh | bash
 
 # --- Stage 3: Final image ---
-FROM python:3-alpine
+FROM python:3-slim
 
-RUN apk add --no-cache \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
-    curl \
     ca-certificates \
-    gcompat
+    && rm -rf /var/lib/apt/lists/*
 
 # Docker CLI + Compose plugin (static binaries only)
 COPY --from=docker-stage /usr/local/bin/docker /usr/local/bin/docker
 COPY --from=docker-stage /usr/local/libexec/docker/cli-plugins/ /usr/local/libexec/docker/cli-plugins/
 
-# pass-cli (glibc binary — needs gcompat on Alpine)
+# pass-cli (glibc binary)
 COPY --from=pass-stage /usr/local/bin/pass-cli /usr/local/bin/pass-cli
 
 # Allow git operations on mounted volumes with different ownership
