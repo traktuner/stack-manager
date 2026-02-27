@@ -68,7 +68,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /data/docker-apps:/data/docker-apps
-      - pass-cli-data:/root/.local/share/proton-pass-cli
+      - pass-cli-data:/root/.local/share
     environment:
       - DOCKER_APPS_PATH=/data/docker-apps
       - PASS_VAULT=docker-secrets

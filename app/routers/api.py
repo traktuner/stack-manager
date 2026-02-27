@@ -123,6 +123,35 @@ async def update_configs(request: Request):
 
 @router.post("/api/pass/login", response_class=HTMLResponse)
 async def pass_login(request: Request):
+    import shutil
+    from pathlib import Path
+
+    # Check pass-cli is installed
+    if not shutil.which("pass-cli"):
+        return HTMLResponse(
+            '<div class="output-error">pass-cli is not installed in this container.</div>'
+        )
+
+    # Check storage is writable (needs a volume mount)
+    share_dir = Path.home() / ".local" / "share"
+    if not share_dir.exists():
+        try:
+            share_dir.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            pass
+    test_file = share_dir / ".write-test"
+    try:
+        test_file.touch()
+        test_file.unlink()
+    except OSError:
+        return HTMLResponse(
+            '<div class="output-error">'
+            "Cannot write to storage. Mount a volume to persist the Proton Pass session:<br><br>"
+            "<code>volumes:<br>"
+            "&nbsp;&nbsp;- pass-cli-data:/root/.local/share</code>"
+            "</div>"
+        )
+
     form = await request.form()
     email = form.get("email", "").strip()
     if not email:
