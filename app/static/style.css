@@ -16,7 +16,7 @@ main.container-fluid {
 header nav {
     border-bottom: 1px solid transparent;
     background-image: linear-gradient(var(--pico-background-color), var(--pico-background-color)),
-                      linear-gradient(90deg, transparent, rgba(46, 204, 113, 0.3), rgba(52, 152, 219, 0.3), transparent);
+                      linear-gradient(90deg, transparent 5%, rgba(46, 204, 113, 0.15) 30%, rgba(52, 152, 219, 0.15) 70%, transparent 95%);
     background-origin: padding-box, border-box;
     background-clip: padding-box, border-box;
     padding-bottom: 0.75rem;
@@ -269,9 +269,15 @@ header nav {
 .mode-pass {
     background: linear-gradient(135deg, #2c3e50, #1a252f);
     border: 1px solid rgba(52, 152, 219, 0.2);
+    color: #8ec8e8;
     font-size: 0.7rem;
     padding: 0.05rem 0.4rem;
     border-radius: 3px;
+}
+
+/* Ensure badge text is always readable on dark bg */
+.stack-info small {
+    color: var(--pico-muted-color);
 }
 
 /* Health */

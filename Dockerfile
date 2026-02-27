@@ -26,6 +26,11 @@ COPY --from=pass-stage /usr/local/bin/pass-cli /usr/local/bin/pass-cli
 # Allow git operations on mounted volumes with different ownership
 RUN git config --global --add safe.directory '*'
 
+# Git credential helper: uses GIT_TOKEN env var for HTTPS auth on private repos
+COPY app/git-credential-env /usr/local/bin/git-credential-env
+RUN chmod +x /usr/local/bin/git-credential-env \
+    && git config --global credential.helper '/usr/local/bin/git-credential-env'
+
 ARG GIT_COMMIT=dev
 ENV GIT_COMMIT=${GIT_COMMIT}
 

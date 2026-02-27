@@ -152,6 +152,13 @@ async def stop_stack(name: str) -> process_service.TaskState:
 
 async def update_configs() -> process_service.TaskState:
     """Git pull latest stack definitions."""
+    git_dir = Path(DOCKER_APPS_PATH) / ".git"
+    if not git_dir.is_dir():
+        return await _error_task(
+            f"No git repository found at {DOCKER_APPS_PATH}.\n"
+            "Mount a git-cloned repo as your DOCKER_APPS_PATH volume."
+        )
+
     return await process_service.run_command(
         ["git", "-C", DOCKER_APPS_PATH, "pull", "--ff-only"],
         stack_name="__update__",
