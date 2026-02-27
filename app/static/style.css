@@ -37,6 +37,31 @@ header::after {
     background: linear-gradient(90deg, transparent 0%, rgba(46, 204, 113, 0.15) 25%, rgba(52, 152, 219, 0.15) 75%, transparent 100%);
 }
 
+/* Loading splash */
+.loading-splash {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 1rem;
+    gap: 1.2rem;
+    color: var(--pico-muted-color);
+    font-size: 0.9rem;
+    letter-spacing: 0.02em;
+}
+
+.loading-icon {
+    width: 56px;
+    height: 56px;
+    animation: loading-pulse 2s ease-in-out infinite;
+    filter: drop-shadow(0 0 10px rgba(95, 219, 143, 0.3));
+}
+
+@keyframes loading-pulse {
+    0%, 100% { opacity: 0.5; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.08); }
+}
+
 /* Stack grid layout */
 #stack-list {
     display: grid;
