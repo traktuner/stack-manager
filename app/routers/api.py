@@ -1,17 +1,25 @@
 from __future__ import annotations
 
+import os
+import shutil
+from html import escape
 from pathlib import Path
 
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 
+from app.config import SAFE_NAME_RE
+from app.main_templates import templates
 from app.services import docker_service, mgmt_service, process_service, stack_service
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-templates = Jinja2Templates(directory=BASE_DIR / "templates")
-
 router = APIRouter()
+
+
+def _validate_name(name: str) -> str | None:
+    """Return an HTML error response string if name is invalid, else None."""
+    if not SAFE_NAME_RE.match(name):
+        return f'<div class="output-error">Invalid name: "{escape(name)}"</div>'
+    return None
 
 
 def _build_stack_data() -> list[dict]:
@@ -50,9 +58,13 @@ async def get_stacks(request: Request):
 
 @router.post("/api/stacks/{name}/start", response_class=HTMLResponse)
 async def start_stack(name: str, request: Request):
+    err = _validate_name(name)
+    if err:
+        return HTMLResponse(err, status_code=400)
+
     stack = stack_service.get_stack(name)
     if stack is None:
-        return HTMLResponse(f'<div class="output-error">Stack "{name}" not found.</div>', status_code=404)
+        return HTMLResponse(f'<div class="output-error">Stack "{escape(name)}" not found.</div>', status_code=404)
 
     if stack.is_self:
         return HTMLResponse('<div class="output-error">Cannot start stack-manager from within itself.</div>')
@@ -67,9 +79,13 @@ async def start_stack(name: str, request: Request):
 
 @router.post("/api/stacks/{name}/stop", response_class=HTMLResponse)
 async def stop_stack(name: str, request: Request):
+    err = _validate_name(name)
+    if err:
+        return HTMLResponse(err, status_code=400)
+
     stack = stack_service.get_stack(name)
     if stack is None:
-        return HTMLResponse(f'<div class="output-error">Stack "{name}" not found.</div>', status_code=404)
+        return HTMLResponse(f'<div class="output-error">Stack "{escape(name)}" not found.</div>', status_code=404)
 
     if stack.is_self:
         return HTMLResponse('<div class="output-error">Cannot stop stack-manager from within itself.</div>')
@@ -84,15 +100,23 @@ async def stop_stack(name: str, request: Request):
 
 @router.post("/api/stacks/{stack_name}/services/{service_name}/upgrade", response_class=HTMLResponse)
 async def upgrade_service(stack_name: str, service_name: str, request: Request):
+    for n in (stack_name, service_name):
+        err = _validate_name(n)
+        if err:
+            return HTMLResponse(err, status_code=400)
+
     stack = stack_service.get_stack(stack_name)
     if stack is None:
-        return HTMLResponse(f'<div class="output-error">Stack "{stack_name}" not found.</div>', status_code=404)
+        return HTMLResponse(f'<div class="output-error">Stack "{escape(stack_name)}" not found.</div>', status_code=404)
 
     if stack.is_self:
         return HTMLResponse('<div class="output-error">Cannot modify stack-manager from within itself.</div>')
 
     if service_name not in stack.service_map.values():
-        return HTMLResponse(f'<div class="output-error">Service "{service_name}" not found in stack "{stack_name}".</div>', status_code=404)
+        return HTMLResponse(
+            f'<div class="output-error">Service "{escape(service_name)}" not found in stack "{escape(stack_name)}".</div>',
+            status_code=404,
+        )
 
     task = await mgmt_service.upgrade_service(stack_name, service_name)
     return templates.TemplateResponse("partials/output.html", {
@@ -144,9 +168,6 @@ async def update_configs(request: Request):
 
 @router.post("/api/pass/login", response_class=HTMLResponse)
 async def pass_login(request: Request):
-    import shutil
-    from pathlib import Path
-
     # Check pass-cli is installed
     if not shutil.which("pass-cli"):
         return HTMLResponse(
@@ -154,7 +175,6 @@ async def pass_login(request: Request):
         )
 
     # Check storage is writable (needs a volume mount for data + config)
-    import os
     data_dir = Path.home() / ".local" / "share"
     config_dir = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
     errors = []
@@ -209,6 +229,13 @@ async def pass_login(request: Request):
 
 @router.get("/api/containers/{name}/logs")
 async def container_logs(name: str, lines: int = 100):
+    err = _validate_name(name)
+    if err:
+        return {"container": name, "logs": "Invalid container name."}
+
+    # Clamp lines to prevent DoS
+    lines = min(max(lines, 1), 10000)
+
     logs = docker_service.get_container_logs(name, tail=lines)
     return {"container": name, "logs": logs}
 

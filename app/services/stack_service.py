@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -9,7 +8,6 @@ import yaml
 from app.config import DOCKER_APPS_PATH, SELF_STACK_NAME
 
 COMPOSE_FILENAMES = ("docker-compose.yml", "docker-compose.yaml")
-PASS_URI_RE = re.compile(r"^pass://")
 
 
 @dataclass
@@ -59,7 +57,7 @@ def _parse_pass_refs(template_path: Path) -> list[str]:
                 continue
             if "=" in line:
                 value = line.split("=", 1)[1]
-                if PASS_URI_RE.match(value):
+                if value.startswith("pass://"):
                     refs.append(value)
     except Exception:
         pass

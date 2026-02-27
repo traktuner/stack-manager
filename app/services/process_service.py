@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import re
+import time
 import uuid
 from dataclasses import dataclass, field
 from typing import Callable, Awaitable
@@ -14,6 +15,10 @@ _stack_locks: dict[str, asyncio.Lock] = {}
 # In-memory task store
 _tasks: dict[str, "TaskState"] = {}
 
+# Task retention: max age in seconds and max count
+_TASK_MAX_AGE = 3600  # 1 hour
+_TASK_MAX_COUNT = 200
+
 
 @dataclass
 class TaskState:
@@ -23,12 +28,48 @@ class TaskState:
     lines: list[str] = field(default_factory=list)
     done: bool = False
     exit_code: int | None = None
+    created_at: float = field(default_factory=time.time)
 
 
 def _get_lock(stack_name: str) -> asyncio.Lock:
     if stack_name not in _stack_locks:
         _stack_locks[stack_name] = asyncio.Lock()
     return _stack_locks[stack_name]
+
+
+def _cleanup_tasks() -> None:
+    """Remove old completed tasks to prevent memory leaks."""
+    now = time.time()
+    to_remove = [
+        tid for tid, t in _tasks.items()
+        if t.done and (now - t.created_at) > _TASK_MAX_AGE
+    ]
+    for tid in to_remove:
+        del _tasks[tid]
+
+    # If still too many, remove oldest completed tasks
+    if len(_tasks) > _TASK_MAX_COUNT:
+        completed = sorted(
+            ((tid, t) for tid, t in _tasks.items() if t.done),
+            key=lambda x: x[1].created_at,
+        )
+        excess = len(_tasks) - _TASK_MAX_COUNT
+        for tid, _ in completed[:excess]:
+            del _tasks[tid]
+
+
+def _busy_task(stack_name: str, label: str) -> TaskState:
+    """Create an immediately-failed task indicating the stack is busy."""
+    ts = TaskState(
+        task_id=str(uuid.uuid4()),
+        command=label,
+        stack_name=stack_name,
+    )
+    ts.lines.append(f"Operation '{stack_name}' is already running.\n")
+    ts.done = True
+    ts.exit_code = 1
+    _tasks[ts.task_id] = ts
+    return ts
 
 
 def get_task(task_id: str) -> TaskState | None:
@@ -64,19 +105,11 @@ async def run_subprocess(args: list[str], cwd: str, task: TaskState) -> int:
 
 async def run_command(args: list[str], stack_name: str, cwd: str, label: str = "") -> TaskState:
     """Run a single command asynchronously, streaming output into a TaskState."""
+    _cleanup_tasks()
+
     lock = _get_lock(stack_name)
     if lock.locked():
-        task_id = str(uuid.uuid4())
-        ts = TaskState(
-            task_id=task_id,
-            command=label or " ".join(args),
-            stack_name=stack_name,
-        )
-        ts.lines.append(f"Stack {stack_name} is already busy.\n")
-        ts.done = True
-        ts.exit_code = 1
-        _tasks[task_id] = ts
-        return ts
+        return _busy_task(stack_name, label or " ".join(args))
 
     task_id = str(uuid.uuid4())
     ts = TaskState(
@@ -105,19 +138,11 @@ async def run_script(
 
     script_fn receives the TaskState (to append lines) and returns an exit code.
     """
+    _cleanup_tasks()
+
     lock = _get_lock(stack_name)
     if lock.locked():
-        task_id = str(uuid.uuid4())
-        ts = TaskState(
-            task_id=task_id,
-            command=label,
-            stack_name=stack_name,
-        )
-        ts.lines.append(f"Operation '{stack_name}' is already running.\n")
-        ts.done = True
-        ts.exit_code = 1
-        _tasks[task_id] = ts
-        return ts
+        return _busy_task(stack_name, label)
 
     task_id = str(uuid.uuid4())
     ts = TaskState(

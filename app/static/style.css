@@ -561,7 +561,8 @@ nav kbd {
         font-size: 0.85rem;
     }
 
-    #output-modal {
+    #output-modal,
+    #logs-modal {
         max-width: 98vw;
         margin: 0.5rem auto;
     }
@@ -688,9 +689,3 @@ nav kbd {
     }
 }
 
-@media (max-width: 768px) {
-    #logs-modal {
-        max-width: 98vw;
-        margin: 0.5rem auto;
-    }
-}

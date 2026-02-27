@@ -3,9 +3,8 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 
-from app.config import GIT_COMMIT
+from app.main_templates import templates
 from app.routers import api, sse
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -13,8 +12,6 @@ BASE_DIR = Path(__file__).resolve().parent
 app = FastAPI(title="Stack Manager")
 
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
-templates = Jinja2Templates(directory=BASE_DIR / "templates")
-templates.env.globals["git_commit"] = GIT_COMMIT
 
 app.include_router(api.router)
 app.include_router(sse.router)

@@ -55,7 +55,7 @@
                 {% if c.health != "n/a" %}<span class="health-{{ c.health }}">{{ c.health }}</span>{% endif %}
                 <button class="container-logs-btn"
                         title="View logs for {{ c.name }}"
-                        onclick="showLogs('{{ c.name }}')">
+                        onclick="showLogs({{ c.name|tojson }})">
                     <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12">
                         <path d="M2 2h12v12H2V2zm1.5 2v8h9V4h-9zM5 6h6v1H5V6zm0 2.5h4v1H5v-1z"/>
                     </svg>

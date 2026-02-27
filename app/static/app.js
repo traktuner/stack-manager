@@ -132,7 +132,8 @@ function showPassLogin() {
 
     var modalContent = document.getElementById("modal-content");
     if (modalContent) {
-        modalContent.innerHTML = '<div class="output-header"><code>$ pass-cli login ' + email + '</code><span id="output-status" aria-busy="true">running</span></div><pre class="output-pre" id="output-pre"></pre>';
+        var safeEmail = email.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        modalContent.innerHTML = '<div class="output-header"><code>$ pass-cli login ' + safeEmail + '</code><span id="output-status" aria-busy="true">running</span></div><pre class="output-pre" id="output-pre"></pre>';
     }
     openModal();
 

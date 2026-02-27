@@ -1,7 +1,9 @@
 """Stack management operations — replaces external mgmt.sh script."""
 from __future__ import annotations
 
+import asyncio
 import re
+import uuid
 from pathlib import Path
 
 from app.config import COMPOSE_CMD, DOCKER_APPS_PATH
@@ -18,9 +20,17 @@ def _compose_args(*extra: str) -> list[str]:
     return [*COMPOSE_CMD, *extra]
 
 
+def _pass_compose_args(*extra: str) -> list[str]:
+    """Build a pass-cli wrapped compose command."""
+    return [
+        "pass-cli", "run", "--env-file", ".env.template", "--",
+        *COMPOSE_CMD, "--env-file", ".env.template",
+        *extra,
+    ]
+
+
 async def _check_secret(uri: str, cwd: str) -> bool:
     """Silently check if a pass-cli secret exists (no output)."""
-    import asyncio
     try:
         proc = await asyncio.create_subprocess_exec(
             "pass-cli", "item", "view", uri,
@@ -80,11 +90,9 @@ async def start_stack(name: str) -> process_service.TaskState:
     cwd = _stack_dir(name)
 
     if stack.mode == "pass":
-        # Proton Pass mode: validate secrets then start with pass-cli
         async def _script(task: process_service.TaskState) -> int:
             task.lines.append(f"[{name}] Using Proton Pass secret injection\n")
 
-            # Validate pass-cli session
             task.lines.append("Checking pass-cli session...\n")
             code = await process_service.run_subprocess(
                 ["pass-cli", "test"], cwd, task,
@@ -93,18 +101,14 @@ async def start_stack(name: str) -> process_service.TaskState:
                 task.lines.append("Error: pass-cli session not active.\n")
                 return 1
 
-            # Validate all secret references
             template = Path(cwd) / ".env.template"
             if not await _validate_secrets(template, cwd, task):
                 task.lines.append(f"Secret validation failed for {name}. Aborting.\n")
                 return 1
 
-            # Start with pass-cli
             task.lines.append(f"Starting {name}...\n")
             code = await process_service.run_subprocess(
-                ["pass-cli", "run", "--env-file", ".env.template", "--",
-                 *COMPOSE_CMD, "--env-file", ".env.template",
-                 "up", "-d", "--remove-orphans"],
+                _pass_compose_args("up", "-d", "--remove-orphans"),
                 cwd, task,
             )
             if code == 0:
@@ -114,7 +118,6 @@ async def start_stack(name: str) -> process_service.TaskState:
 
         return await process_service.run_script(_script, name, f"start {name}")
     else:
-        # Legacy (.env) or no-env mode
         async def _script(task: process_service.TaskState) -> int:
             task.lines.append(f"Starting {name}...\n")
             code = await process_service.run_subprocess(
@@ -138,7 +141,6 @@ async def stop_stack(name: str) -> process_service.TaskState:
 
     async def _script(task: process_service.TaskState) -> int:
         task.lines.append(f"Stopping {name}...\n")
-        # Pass .env.template to suppress "variable not set" warnings
         env_args = ["--env-file", ".env.template"] if stack.mode == "pass" else []
         code = await process_service.run_subprocess(
             _compose_args(*env_args, "down", "--remove-orphans"), cwd, task,
@@ -160,7 +162,6 @@ async def update_configs() -> process_service.TaskState:
         )
 
     async def _script(task: process_service.TaskState) -> int:
-        # Detect remote URL to decide if we need SSH→HTTPS override
         git_config_file = Path(DOCKER_APPS_PATH) / ".git" / "config"
         remote_url = ""
         try:
@@ -172,14 +173,11 @@ async def update_configs() -> process_service.TaskState:
         except Exception:
             pass
 
-        # Build git pull command with temporary SSH→HTTPS override if needed
-        # Uses git -c so .git/config is NOT modified (keeps server's SSH URL intact)
         git_cmd = ["git", "-C", DOCKER_APPS_PATH]
 
         if remote_url.startswith("git@") or remote_url.startswith("ssh://"):
             task.lines.append(
-                f"Remote uses SSH ({remote_url})\n"
-                f"Using temporary HTTPS override (not modifying .git/config)\n\n"
+                "Remote uses SSH — using temporary HTTPS override\n\n"
             )
             git_cmd.extend([
                 "-c", "url.https://github.com/.insteadOf=git@github.com:",
@@ -240,7 +238,6 @@ async def upgrade_all() -> process_service.TaskState:
             task.lines.append("No active stacks to upgrade.\n")
             return 0
 
-        # Pre-check: if any stack needs pass-cli, verify session once
         needs_pass = any(s.mode == "pass" for s in active)
         if needs_pass:
             task.lines.append("Checking pass-cli session...\n")
@@ -264,7 +261,6 @@ async def upgrade_all() -> process_service.TaskState:
             task.lines.append(f"[{s.name}] Upgrading...\n")
 
             if s.mode == "pass":
-                # Validate secrets before upgrading
                 template = Path(cwd) / ".env.template"
                 if not await _validate_secrets(template, cwd, task):
                     task.lines.append(f"[{s.name}] Secret validation failed. Skipping.\n\n")
@@ -273,9 +269,7 @@ async def upgrade_all() -> process_service.TaskState:
                     continue
 
                 code = await process_service.run_subprocess(
-                    ["pass-cli", "run", "--env-file", ".env.template", "--",
-                     *COMPOSE_CMD, "--env-file", ".env.template",
-                     "up", "-d", "--remove-orphans"],
+                    _pass_compose_args("up", "-d", "--remove-orphans"),
                     cwd, task,
                 )
             else:
@@ -314,14 +308,10 @@ async def upgrade_service(stack_name: str, service_name: str) -> process_service
     async def _script(task: process_service.TaskState) -> int:
         task.lines.append(f"[{stack_name}] Upgrading service '{service_name}'...\n")
 
-        # Pull latest image
         task.lines.append(f"Pulling image for {service_name}...\n")
         if stack.mode == "pass":
             code = await process_service.run_subprocess(
-                ["pass-cli", "run", "--env-file", ".env.template", "--",
-                 *COMPOSE_CMD, "--env-file", ".env.template",
-                 "pull", service_name],
-                cwd, task,
+                _pass_compose_args("pull", service_name), cwd, task,
             )
         else:
             code = await process_service.run_subprocess(
@@ -331,14 +321,10 @@ async def upgrade_service(stack_name: str, service_name: str) -> process_service
             task.lines.append(f"Pull failed for {service_name}.\n")
             return code
 
-        # Recreate (compose handles depends_on)
         task.lines.append(f"Recreating {service_name}...\n")
         if stack.mode == "pass":
             code = await process_service.run_subprocess(
-                ["pass-cli", "run", "--env-file", ".env.template", "--",
-                 *COMPOSE_CMD, "--env-file", ".env.template",
-                 "up", "-d", service_name],
-                cwd, task,
+                _pass_compose_args("up", "-d", service_name), cwd, task,
             )
         else:
             code = await process_service.run_subprocess(
@@ -346,7 +332,6 @@ async def upgrade_service(stack_name: str, service_name: str) -> process_service
             )
 
         if code == 0:
-            # Clean up dangling images left behind by the pull
             task.lines.append("Cleaning up old images...\n")
             await process_service.run_subprocess(
                 ["docker", "image", "prune", "-f"], cwd, task,
@@ -371,7 +356,6 @@ async def cleanup() -> process_service.TaskState:
 
 async def _error_task(message: str) -> process_service.TaskState:
     """Create an immediately-failed task with an error message."""
-    import uuid
     ts = process_service.TaskState(
         task_id=str(uuid.uuid4()),
         command="error",
