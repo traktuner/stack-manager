@@ -29,6 +29,7 @@ def _build_stack_data() -> list[dict]:
             "is_self": s.is_self,
             "busy": process_service.is_stack_busy(s.name),
             "services": s.services,
+            "service_map": s.service_map,
             "status": status,
         })
 
@@ -78,6 +79,26 @@ async def stop_stack(name: str, request: Request):
         "request": request,
         "task_id": task.task_id,
         "command": f"stop {name}",
+    })
+
+
+@router.post("/api/stacks/{stack_name}/services/{service_name}/upgrade", response_class=HTMLResponse)
+async def upgrade_service(stack_name: str, service_name: str, request: Request):
+    stack = stack_service.get_stack(stack_name)
+    if stack is None:
+        return HTMLResponse(f'<div class="output-error">Stack "{stack_name}" not found.</div>', status_code=404)
+
+    if stack.is_self:
+        return HTMLResponse('<div class="output-error">Cannot modify stack-manager from within itself.</div>')
+
+    if service_name not in stack.service_map.values():
+        return HTMLResponse(f'<div class="output-error">Service "{service_name}" not found in stack "{stack_name}".</div>', status_code=404)
+
+    task = await mgmt_service.upgrade_service(stack_name, service_name)
+    return templates.TemplateResponse("partials/output.html", {
+        "request": request,
+        "task_id": task.task_id,
+        "command": f"upgrade {stack_name}/{service_name}",
     })
 
 

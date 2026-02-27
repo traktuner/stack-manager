@@ -67,6 +67,7 @@ def get_stack_status(service_names: list[str], all_statuses: dict[str, Container
             "name": name,
             "status": cs.status if cs else "not found",
             "health": cs.health if cs else "n/a",
+            "image": cs.image if cs else "unknown",
         })
 
     total = len(service_names)

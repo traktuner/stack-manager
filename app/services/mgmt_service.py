@@ -263,6 +263,57 @@ async def upgrade_all() -> process_service.TaskState:
     return await process_service.run_script(_script, "__upgrade__", "upgrade all")
 
 
+async def upgrade_service(stack_name: str, service_name: str) -> process_service.TaskState:
+    """Upgrade a single service within a stack (pull + recreate)."""
+    stack = stack_service.get_stack(stack_name)
+    if stack is None:
+        return await _error_task(f'Stack "{stack_name}" not found.')
+
+    cwd = _stack_dir(stack_name)
+
+    async def _script(task: process_service.TaskState) -> int:
+        task.lines.append(f"[{stack_name}] Upgrading service '{service_name}'...\n")
+
+        # Pull latest image
+        task.lines.append(f"Pulling image for {service_name}...\n")
+        if stack.mode == "pass":
+            code = await process_service.run_subprocess(
+                ["pass-cli", "run", "--env-file", ".env.template", "--",
+                 *COMPOSE_CMD, "--env-file", ".env.template",
+                 "pull", service_name],
+                cwd, task,
+            )
+        else:
+            code = await process_service.run_subprocess(
+                _compose_args("pull", service_name), cwd, task,
+            )
+        if code != 0:
+            task.lines.append(f"Pull failed for {service_name}.\n")
+            return code
+
+        # Recreate (compose handles depends_on)
+        task.lines.append(f"Recreating {service_name}...\n")
+        if stack.mode == "pass":
+            code = await process_service.run_subprocess(
+                ["pass-cli", "run", "--env-file", ".env.template", "--",
+                 *COMPOSE_CMD, "--env-file", ".env.template",
+                 "up", "-d", service_name],
+                cwd, task,
+            )
+        else:
+            code = await process_service.run_subprocess(
+                _compose_args("up", "-d", service_name), cwd, task,
+            )
+
+        if code == 0:
+            task.lines.append(f"[{stack_name}/{service_name}] Upgrade complete.\n")
+        else:
+            task.lines.append(f"[{stack_name}/{service_name}] Upgrade failed.\n")
+        return code
+
+    return await process_service.run_script(_script, stack_name, f"upgrade {stack_name}/{service_name}")
+
+
 async def cleanup() -> process_service.TaskState:
     """Remove unused Docker resources."""
     return await process_service.run_command(

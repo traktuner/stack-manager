@@ -166,3 +166,18 @@ setInterval(updateStatus, 30000);
 document.body.addEventListener("refresh", function () {
     refreshStacks();
 });
+
+// Container upgrade button: add .updating class on parent pill during request
+document.body.addEventListener("htmx:beforeRequest", function (e) {
+    if (e.detail.elt && e.detail.elt.classList.contains("container-update-btn")) {
+        var pill = e.detail.elt.closest(".container-pill");
+        if (pill) pill.classList.add("updating");
+    }
+});
+
+document.body.addEventListener("htmx:afterRequest", function (e) {
+    if (e.detail.elt && e.detail.elt.classList.contains("container-update-btn")) {
+        var pill = e.detail.elt.closest(".container-pill");
+        if (pill) pill.classList.remove("updating");
+    }
+});

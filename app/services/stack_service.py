@@ -20,6 +20,7 @@ class StackInfo:
     active: bool  # .inuse marker exists
     compose_file: str = ""
     services: list[str] = field(default_factory=list)
+    service_map: dict[str, str] = field(default_factory=dict)  # container_name -> service_name
     pass_refs: list[str] = field(default_factory=list)
     is_self: bool = False
 
@@ -32,18 +33,21 @@ def _find_compose_file(stack_dir: Path) -> Path | None:
     return None
 
 
-def _parse_services(compose_path: Path) -> list[str]:
+def _parse_services(compose_path: Path) -> tuple[list[str], dict[str, str]]:
+    """Parse compose file, return (container_names, {container_name: service_name})."""
     try:
         data = yaml.safe_load(compose_path.read_text())
         if not data or "services" not in data:
-            return []
+            return [], {}
         services = []
+        service_map = {}
         for svc_name, svc_conf in data["services"].items():
             container_name = svc_conf.get("container_name", svc_name)
             services.append(container_name)
-        return services
+            service_map[container_name] = svc_name
+        return services, service_map
     except Exception:
-        return []
+        return [], {}
 
 
 def _parse_pass_refs(template_path: Path) -> list[str]:
@@ -90,13 +94,15 @@ def list_stacks() -> list[StackInfo]:
             mode = "none"
             pass_refs = []
 
+        services, service_map = _parse_services(compose)
         stacks.append(StackInfo(
             name=entry.name,
             path=str(entry),
             mode=mode,
             active=inuse.is_file(),
             compose_file=compose.name,
-            services=_parse_services(compose),
+            services=services,
+            service_map=service_map,
             pass_refs=pass_refs,
             is_self=(entry.name == SELF_STACK_NAME),
         ))
