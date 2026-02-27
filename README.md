@@ -67,24 +67,52 @@ services:
       - "8099:8000"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - /data/docker-apps:/data/docker-apps
-      - pass-cli-data:/root/.local/share
+      - /path/to/your/stacks:/data/docker-apps
+      - pass-cli-data:/root/.local/share        # for Proton Pass session persistence
     environment:
       - DOCKER_APPS_PATH=/data/docker-apps
-      - PASS_VAULT=docker-secrets
-      - PROTON_PASS_KEY_PROVIDER=fs
+      - PASS_VAULT=your-vault-name               # your Proton Pass vault name
+      - PROTON_PASS_KEY_PROVIDER=fs              # required for Docker
+      - XDG_CONFIG_HOME=/root/.local/share/config
 
 volumes:
   pass-cli-data:
 ```
+
+> **Without Proton Pass?** If you don't use Proton Pass, you can omit `PASS_VAULT`, `PROTON_PASS_KEY_PROVIDER`, `XDG_CONFIG_HOME`, and the `pass-cli-data` volume. Stacks will use `.env` files or run without environment configuration.
 
 ### Environment Variables
 
 | Variable | Default | Description |
 |---|---|---|
 | `DOCKER_APPS_PATH` | `/data/docker-apps` | Directory containing your Docker Compose stacks |
-| `PASS_VAULT` | `docker-secrets` | Proton Pass vault name for secret lookups |
-| `PROTON_PASS_KEY_PROVIDER` | — | Set to `fs` for headless pass-cli usage |
+| `PASS_VAULT` | — | Name of your Proton Pass vault for secret lookups (see below) |
+| `PROTON_PASS_KEY_PROVIDER` | `keyring` | How pass-cli stores encryption keys (see below) |
+| `XDG_CONFIG_HOME` | — | Set to `/root/.local/share/config` when using pass-cli with a volume |
+
+#### `PASS_VAULT`
+
+The name of your personal Proton Pass vault that contains the secrets referenced in `.env.template` files. This is **not** a fixed default — you must set it to the vault name you created in your Proton Pass account.
+
+Secrets in `.env.template` are referenced as `pass://<vault>/<item>/<field>`, where `<vault>` matches this variable.
+
+#### `PROTON_PASS_KEY_PROVIDER`
+
+Controls how `pass-cli` stores its encryption keys. Available options:
+
+| Value | Description | Use case |
+|---|---|---|
+| `keyring` | Uses the system keyring / Secret Service API (D-Bus) | Desktop Linux with a keyring daemon |
+| `fs` | Stores keys on the filesystem | **Docker containers** and headless servers |
+| *(env var)* | Derives key from the `PROTON_PASS_ENCRYPTION_KEY` environment variable | CI/CD pipelines, ephemeral environments |
+
+For Docker deployments, use `fs` — containers don't have a system keyring.
+
+When using the environment variable approach, set `PROTON_PASS_KEY_PROVIDER` to the name of another environment variable (e.g. `PROTON_PASS_ENCRYPTION_KEY`) that contains the encryption key.
+
+#### `XDG_CONFIG_HOME`
+
+When running in a container with `pass-cli`, the CLI writes both session data and config/encryption keys to separate directories (`~/.local/share` and `~/.config`). Setting `XDG_CONFIG_HOME=/root/.local/share/config` redirects config writes under the same volume mount, so a single named volume keeps everything persistent.
 
 ### Volumes
 
@@ -92,7 +120,7 @@ volumes:
 |---|---|---|
 | `/var/run/docker.sock` | Yes | Docker socket for container management |
 | `DOCKER_APPS_PATH` | Yes | Your stack definitions directory |
-| `pass-cli-data` | No | Persistent Proton Pass session (survives container restarts) |
+| `pass-cli-data` | For Proton Pass | Persistent Proton Pass session and encryption keys (survives container restarts) |
 
 ## Proton Pass Setup
 
@@ -110,8 +138,8 @@ APP_NAME=my-app
 APP_PORT=8080
 
 # Secrets are resolved from Proton Pass at start time
-DB_PASSWORD=pass://docker-secrets/my-app/database-password
-API_KEY=pass://docker-secrets/my-app/api-key
+DB_PASSWORD=pass://your-vault-name/my-app/database-password
+API_KEY=pass://your-vault-name/my-app/api-key
 ```
 
 ## API

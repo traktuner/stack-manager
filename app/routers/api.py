@@ -132,23 +132,28 @@ async def pass_login(request: Request):
             '<div class="output-error">pass-cli is not installed in this container.</div>'
         )
 
-    # Check storage is writable (needs a volume mount)
-    share_dir = Path.home() / ".local" / "share"
-    if not share_dir.exists():
+    # Check storage is writable (needs a volume mount for data + config)
+    import os
+    data_dir = Path.home() / ".local" / "share"
+    config_dir = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
+    errors = []
+    for label, d in [("data", data_dir), ("config", config_dir)]:
         try:
-            share_dir.mkdir(parents=True, exist_ok=True)
+            d.mkdir(parents=True, exist_ok=True)
+            test_file = d / ".write-test"
+            test_file.touch()
+            test_file.unlink()
         except OSError:
-            pass
-    test_file = share_dir / ".write-test"
-    try:
-        test_file.touch()
-        test_file.unlink()
-    except OSError:
+            errors.append(label)
+    if errors:
         return HTMLResponse(
             '<div class="output-error">'
-            "Cannot write to storage. Mount a volume to persist the Proton Pass session:<br><br>"
+            "Cannot write to storage (" + ", ".join(errors) + " directory is read-only).<br><br>"
+            "Mount a volume and set XDG_CONFIG_HOME in your docker-compose.yml:<br><br>"
             "<code>volumes:<br>"
-            "&nbsp;&nbsp;- pass-cli-data:/root/.local/share</code>"
+            "&nbsp;&nbsp;- pass-cli-data:/root/.local/share<br><br>"
+            "environment:<br>"
+            "&nbsp;&nbsp;- XDG_CONFIG_HOME=/root/.local/share/config</code>"
             "</div>"
         )
 

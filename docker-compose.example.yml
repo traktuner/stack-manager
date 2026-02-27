@@ -1,0 +1,31 @@
+services:
+  stack-manager:
+    image: ghcr.io/traktuner/stack-manager:latest
+    container_name: stack-manager
+    restart: unless-stopped
+    ports:
+      - "8099:8000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Mount your directory containing Docker Compose stack folders
+      - /path/to/your/stacks:/data/docker-apps
+      # Persistent storage for Proton Pass session data (optional, for pass-cli)
+      - pass-cli-data:/root/.local/share
+    environment:
+      # Path inside the container where stacks are mounted
+      - DOCKER_APPS_PATH=/data/docker-apps
+      # Name of your Proton Pass vault containing secrets (only needed for pass-cli)
+      - PASS_VAULT=your-vault-name
+      # Key provider for pass-cli encryption keys: keyring (default), fs, or omit for no pass-cli
+      - PROTON_PASS_KEY_PROVIDER=fs
+      # Required when using pass-cli with a volume — redirects config under the mounted volume
+      - XDG_CONFIG_HOME=/root/.local/share/config
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  pass-cli-data:
