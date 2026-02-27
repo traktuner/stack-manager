@@ -23,8 +23,18 @@ COPY --from=docker-stage /usr/local/libexec/docker/cli-plugins/ /usr/local/libex
 # pass-cli (static binary)
 COPY --from=pass-stage /usr/local/bin/pass-cli /usr/local/bin/pass-cli
 
+# Allow git operations on mounted volumes with different ownership
+RUN git config --global --add safe.directory '*'
+
 ARG GIT_COMMIT=dev
 ENV GIT_COMMIT=${GIT_COMMIT}
+
+# Sensible defaults for headless pass-cli operation
+ENV PROTON_PASS_KEY_PROVIDER=fs
+
+# Pre-create pass-cli directories (will be overridden by volume mounts if present)
+RUN mkdir -p /root/.local/share/proton-pass-cli \
+             /root/.config/proton-pass-cli
 
 WORKDIR /app
 

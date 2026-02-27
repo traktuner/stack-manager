@@ -13,13 +13,13 @@
             Update
         </button>
         <button class="secondary outline" hx-post="/api/cleanup" hx-target="#modal-content" hx-swap="innerHTML"
-                hx-confirm="Run docker system prune? This removes unused images, containers, and volumes.">
+                hx-confirm="Run docker system prune? This removes unused images and containers (volumes are preserved).">
             Cleanup
         </button>
     </div>
 </section>
 
-<section id="stack-list" hx-get="/api/stacks" hx-trigger="load, every 10s" hx-swap="innerHTML">
+<section id="stack-list" hx-get="/api/stacks" hx-trigger="load, every 10s" hx-swap="morph:innerHTML">
     <article aria-busy="true">Loading stacks...</article>
 </section>
 

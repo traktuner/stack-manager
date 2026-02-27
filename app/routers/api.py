@@ -179,8 +179,15 @@ async def pass_login(request: Request):
         )
 
     # Ensure pass-cli subdirectories exist (pass-cli doesn't create them itself)
-    for d in [data_dir / "proton-pass-cli", config_dir / "proton-pass-cli"]:
+    for d in [
+        data_dir / "proton-pass-cli",
+        config_dir / "proton-pass-cli",
+    ]:
         d.mkdir(parents=True, exist_ok=True)
+
+    # Ensure PROTON_PASS_KEY_PROVIDER is set for headless operation
+    if not os.environ.get("PROTON_PASS_KEY_PROVIDER"):
+        os.environ["PROTON_PASS_KEY_PROVIDER"] = "fs"
 
     form = await request.form()
     email = form.get("email", "").strip()
@@ -190,7 +197,7 @@ async def pass_login(request: Request):
     task = await process_service.run_command(
         ["pass-cli", "login", email],
         stack_name="__pass_login__",
-        cwd="/tmp",
+        cwd=str(data_dir),
         label=f"pass-cli login {email}",
     )
     return templates.TemplateResponse("partials/output.html", {

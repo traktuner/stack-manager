@@ -95,7 +95,7 @@ function connectStream(taskId) {
 function refreshStacks() {
     var el = document.getElementById("stack-list");
     if (el) {
-        htmx.ajax("GET", "/api/stacks", { target: "#stack-list", swap: "innerHTML" });
+        htmx.ajax("GET", "/api/stacks", { target: "#stack-list", swap: "morph:innerHTML" });
     }
 }
 

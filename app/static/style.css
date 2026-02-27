@@ -138,6 +138,21 @@ header nav {
     color: var(--pico-color);
 }
 
+/* Animated expand */
+.stack-details .stack-containers {
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transition: max-height 0.2s ease, opacity 0.15s ease, margin 0.2s ease;
+    margin-top: 0;
+}
+
+.stack-details[open] .stack-containers {
+    max-height: 200px;
+    opacity: 1;
+    margin-top: 0.25rem;
+}
+
 /* Container pills */
 .stack-containers {
     margin-top: 0.25rem;

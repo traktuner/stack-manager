@@ -320,9 +320,9 @@ async def upgrade_service(stack_name: str, service_name: str) -> process_service
 
 
 async def cleanup() -> process_service.TaskState:
-    """Remove unused Docker resources."""
+    """Remove unused Docker resources (images + containers, but NOT volumes)."""
     return await process_service.run_command(
-        ["docker", "system", "prune", "--all", "--volumes", "--force"],
+        ["docker", "system", "prune", "--all", "--force"],
         stack_name="__cleanup__",
         cwd=DOCKER_APPS_PATH,
         label="docker system prune",
