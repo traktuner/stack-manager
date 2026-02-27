@@ -219,13 +219,20 @@ header::after {
     transform: translateY(-1px);
 }
 
-/* Remove Pico tooltip dotted underline */
+/* Pico tooltip overrides for container pills */
 .container-pill[data-tooltip] {
     border-bottom: none;
 }
 .container-pill[data-tooltip]::before,
 .container-pill[data-tooltip]::after {
     font-size: 0.65rem;
+    animation: none;
+    transition: none;
+    pointer-events: none;
+}
+.container-pill[data-tooltip]::after {
+    background: var(--pico-card-background-color);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Per-container update button */

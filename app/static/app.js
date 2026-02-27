@@ -16,14 +16,34 @@ function closeModal() {
     if (m) m.close();
 }
 
+// Preserve open <details> state before idiomorph swap
+var _openDetails = [];
+document.body.addEventListener("htmx:beforeSwap", function (e) {
+    if (e.detail.target && e.detail.target.id === "stack-list") {
+        _openDetails = [];
+        e.detail.target.querySelectorAll("details[open]").forEach(function (d) {
+            var card = d.closest(".stack-card");
+            if (card && card.id) _openDetails.push(card.id);
+        });
+    }
+});
+
 // Auto-open modal when command output is swapped in
 document.body.addEventListener("htmx:afterSwap", function (e) {
     if (e.detail.target && e.detail.target.id === "modal-content") {
         openModal();
     }
-    // Re-process HTMX attributes after idiomorph swap of stack list
+    // Re-process HTMX attributes and restore details state after swap
     if (e.detail.target && e.detail.target.id === "stack-list") {
         htmx.process(e.detail.target);
+        _openDetails.forEach(function (id) {
+            var card = document.getElementById(id);
+            if (card) {
+                var details = card.querySelector("details");
+                if (details) details.setAttribute("open", "");
+            }
+        });
+        _openDetails = [];
     }
 });
 
