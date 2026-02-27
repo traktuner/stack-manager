@@ -13,7 +13,7 @@
 
 <br>
 
-*Dark-mode dashboard &bull; Real-time streaming output &bull; Mobile-friendly &bull; Self-contained container*
+*Dark-mode dashboard &bull; Real-time streaming output &bull; Container logs &bull; Per-service upgrades &bull; Private repo support &bull; Mobile-friendly*
 
 </div>
 
@@ -22,10 +22,13 @@
 ## Features
 
 - **Start / Stop / Upgrade** Docker Compose stacks from a clean dark-mode web interface
+- **Per-service upgrades** — update individual containers within a stack (pull + recreate)
+- **Container logs** — view live logs for any container directly in the UI
 - **Proton Pass integration** — secrets from `.env.template` files are resolved via `pass-cli` at container start
 - **Live command output** — real-time streaming via Server-Sent Events in a modal overlay
 - **Bulk operations** — upgrade all, pull all images, cleanup unused resources
-- **Git-based config updates** — pull latest stack definitions with one click
+- **Git-based config updates** — pull latest stack definitions with one click (supports private repos)
+- **Private GitHub repos** — authenticate with a GitHub Personal Access Token via `GIT_TOKEN`
 - **Mobile-friendly** — responsive design that works on phones, tablets, and large monitors
 - **Zero external scripts** — all management logic runs inside the container
 
@@ -74,6 +77,7 @@ services:
       - PASS_VAULT=your-vault-name               # your Proton Pass vault name
       - PROTON_PASS_KEY_PROVIDER=fs              # required for Docker
       - XDG_CONFIG_HOME=/root/.local/share/config
+      - GIT_TOKEN=ghp_your_github_token          # for private repos (optional)
 
 volumes:
   pass-cli-data:
@@ -89,6 +93,7 @@ volumes:
 | `PASS_VAULT` | — | Name of your Proton Pass vault for secret lookups (see below) |
 | `PROTON_PASS_KEY_PROVIDER` | `keyring` | How pass-cli stores encryption keys (see below) |
 | `XDG_CONFIG_HOME` | — | Set to `/root/.local/share/config` when using pass-cli with a volume |
+| `GIT_TOKEN` | — | GitHub Personal Access Token for pulling private repos (see below) |
 
 #### `PASS_VAULT`
 
@@ -113,6 +118,14 @@ When using the environment variable approach, set `PROTON_PASS_KEY_PROVIDER` to 
 #### `XDG_CONFIG_HOME`
 
 When running in a container with `pass-cli`, the CLI writes both session data and config/encryption keys to separate directories (`~/.local/share` and `~/.config`). Setting `XDG_CONFIG_HOME=/root/.local/share/config` redirects config writes under the same volume mount, so a single named volume keeps everything persistent.
+
+#### `GIT_TOKEN`
+
+A GitHub Personal Access Token (classic or fine-grained) for authenticating git operations on private repositories. When set, the built-in credential helper automatically provides this token for HTTPS git requests to github.com.
+
+If your stack definitions repo is private, set this variable so the **Update** button can pull the latest changes. The token is used with the `x-access-token` username, which is GitHub's universal method for PAT-based HTTPS authentication.
+
+> **Note:** The container transparently rewrites SSH remote URLs to HTTPS during git pull — it does **not** modify your `.git/config`. This means your server can continue using SSH locally while the container uses HTTPS with the token.
 
 ### Volumes
 
@@ -152,17 +165,19 @@ API_KEY=pass://your-vault-name/my-app/api-key
 | `GET` | `/api/status` | Status JSON (pass-cli, stack counts) |
 | `POST` | `/api/stacks/{name}/start` | Start a stack |
 | `POST` | `/api/stacks/{name}/stop` | Stop a stack |
+| `POST` | `/api/stacks/{stack}/services/{service}/upgrade` | Upgrade a single service |
 | `POST` | `/api/stacks/upgrade` | Upgrade all active stacks |
 | `POST` | `/api/stacks/pull` | Pull images for active stacks |
 | `POST` | `/api/update` | Git pull stack definitions |
 | `POST` | `/api/cleanup` | Docker system prune |
 | `POST` | `/api/pass/login` | Proton Pass CLI login |
+| `GET` | `/api/containers/{name}/logs` | Container logs (JSON, `?lines=N`) |
 | `GET` | `/api/stream/{id}` | SSE command output stream |
 
 ## Tech Stack
 
 - **Backend:** Python 3.12, FastAPI, Uvicorn
-- **Frontend:** Pico CSS, HTMX, vanilla JavaScript
+- **Frontend:** Pico CSS, HTMX + Idiomorph, vanilla JavaScript
 - **Container:** Docker CLI, Docker Compose plugin, pass-cli, git
 
 ---
