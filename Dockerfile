@@ -3,7 +3,7 @@ FROM docker:27-cli AS docker-stage
 
 # --- Stage 2: pass-cli binary ---
 FROM debian:bookworm AS pass-stage
-RUN apt-get update && apt-get install -y curl ca-certificates \
+RUN apt-get update && apt-get install -y curl ca-certificates jq \
     && curl -fsSL https://proton.me/download/pass-cli/install.sh | bash
 
 # --- Stage 3: Final image ---
