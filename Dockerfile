@@ -1,19 +1,27 @@
+# --- Stage 1: Docker CLI + Compose plugin binaries ---
+FROM docker:27-cli AS docker-stage
+
+# --- Stage 2: pass-cli binary ---
+FROM python:3.12-slim AS pass-stage
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \
+    && curl -fsSL https://proton.me/download/pass-cli/install.sh | bash \
+    && rm -rf /var/lib/apt/lists/*
+
+# --- Stage 3: Final image ---
 FROM python:3.12-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
-    gnupg \
     git \
-    && install -m 0755 -d /etc/apt/keyrings \
-    && curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg \
-    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian bookworm stable" > /etc/apt/sources.list.d/docker.list \
-    && apt-get update && apt-get install -y --no-install-recommends \
-    docker-ce-cli \
-    docker-compose-plugin \
-    jq \
-    && rm -rf /var/lib/apt/lists/* \
-    && curl -fsSL https://proton.me/download/pass-cli/install.sh | bash
+    && rm -rf /var/lib/apt/lists/*
+
+# Docker CLI + Compose plugin (static binaries only, no apt deps)
+COPY --from=docker-stage /usr/local/bin/docker /usr/local/bin/docker
+COPY --from=docker-stage /usr/local/libexec/docker/cli-plugins/ /usr/local/libexec/docker/cli-plugins/
+
+# pass-cli (static binary)
+COPY --from=pass-stage /usr/local/bin/pass-cli /usr/local/bin/pass-cli
 
 WORKDIR /app
 
