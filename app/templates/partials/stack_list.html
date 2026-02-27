@@ -10,7 +10,7 @@
     {% set ns.shown_divider = true %}
     <div class="stopped-divider"><small>Stopped</small></div>
 {% endif %}
-<article class="stack-card stack-{{ stack.status.state }}">
+<article id="stack-{{ stack.name }}" class="stack-card stack-{{ stack.status.state }}">
     <div class="stack-header">
         <div class="stack-info">
             <strong>{{ stack.name }}</strong>
