@@ -436,10 +436,14 @@ nav kbd {
 }
 
 #pass-badge.pass-ok {
-    color: #2ecc71;
+    background: linear-gradient(135deg, #1a2f1a, #1a252f);
+    border: 1px solid rgba(46, 204, 113, 0.2);
+    color: #5fdb8f;
 }
 
 #pass-badge.pass-fail {
+    background: linear-gradient(135deg, #2f1a1a, #1a252f);
+    border: 1px solid rgba(231, 76, 60, 0.2);
     color: #e74c3c;
 }
 

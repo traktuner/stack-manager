@@ -21,6 +21,10 @@ document.body.addEventListener("htmx:afterSwap", function (e) {
     if (e.detail.target && e.detail.target.id === "modal-content") {
         openModal();
     }
+    // Re-process HTMX attributes after idiomorph swap of stack list
+    if (e.detail.target && e.detail.target.id === "stack-list") {
+        htmx.process(e.detail.target);
+    }
 });
 
 // Close modal on backdrop click
