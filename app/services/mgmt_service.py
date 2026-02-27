@@ -1,10 +1,13 @@
 """Stack management operations — replaces external mgmt.sh script."""
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from app.config import COMPOSE_CMD, DOCKER_APPS_PATH
 from app.services import process_service, stack_service
+
+_PASS_URI_RE = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)=pass://(.+)$")
 
 
 def _stack_dir(name: str) -> str:
@@ -13,6 +16,59 @@ def _stack_dir(name: str) -> str:
 
 def _compose_args(*extra: str) -> list[str]:
     return [*COMPOSE_CMD, *extra]
+
+
+async def _check_secret(uri: str, cwd: str) -> bool:
+    """Silently check if a pass-cli secret exists (no output)."""
+    import asyncio
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "pass-cli", "item", "view", uri,
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.DEVNULL,
+            cwd=cwd,
+        )
+        await proc.wait()
+        return proc.returncode == 0
+    except Exception:
+        return False
+
+
+async def _validate_secrets(
+    template_path: Path, cwd: str, task: process_service.TaskState
+) -> bool:
+    """Parse .env.template for pass:// refs and verify each secret exists.
+
+    Returns True if all secrets are valid, False otherwise.
+    """
+    task.lines.append("Validating secrets...\n")
+    checked = 0
+    errors = 0
+
+    for line in template_path.read_text().splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        m = _PASS_URI_RE.match(line)
+        if not m:
+            continue
+
+        var_name = m.group(1)
+        uri = f"pass://{m.group(2)}"
+        checked += 1
+
+        if await _check_secret(uri, cwd):
+            task.lines.append(f"  ✓ {var_name}\n")
+        else:
+            task.lines.append(f"  ✗ {var_name} — secret not found: {uri}\n")
+            errors += 1
+
+    if checked == 0:
+        task.lines.append("  No pass:// references found in template.\n")
+    else:
+        task.lines.append(f"  {checked} secret(s) checked, {errors} error(s).\n")
+
+    return errors == 0
 
 
 async def start_stack(name: str) -> process_service.TaskState:
@@ -35,6 +91,12 @@ async def start_stack(name: str) -> process_service.TaskState:
             )
             if code != 0:
                 task.lines.append("Error: pass-cli session not active.\n")
+                return 1
+
+            # Validate all secret references
+            template = Path(cwd) / ".env.template"
+            if not await _validate_secrets(template, cwd, task):
+                task.lines.append(f"Secret validation failed for {name}. Aborting.\n")
                 return 1
 
             # Start with pass-cli
@@ -162,6 +224,14 @@ async def upgrade_all() -> process_service.TaskState:
             task.lines.append(f"[{s.name}] Upgrading...\n")
 
             if s.mode == "pass":
+                # Validate secrets before upgrading
+                template = Path(cwd) / ".env.template"
+                if not await _validate_secrets(template, cwd, task):
+                    task.lines.append(f"[{s.name}] Secret validation failed. Skipping.\n\n")
+                    failed += 1
+                    failed_names.append(s.name)
+                    continue
+
                 code = await process_service.run_subprocess(
                     ["pass-cli", "run", "--env-file", ".env.template", "--",
                      *COMPOSE_CMD, "--env-file", ".env.template",
