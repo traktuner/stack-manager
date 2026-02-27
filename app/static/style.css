@@ -449,8 +449,9 @@ header::after {
 /* Header badges */
 nav kbd {
     font-size: 0.7rem;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--pico-color);
 }
 
 #pass-badge.pass-ok {
