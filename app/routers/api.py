@@ -126,6 +126,27 @@ async def upgrade_service(stack_name: str, service_name: str, request: Request):
     })
 
 
+@router.post("/api/stacks/{name}/upgrade", response_class=HTMLResponse)
+async def upgrade_stack(name: str, request: Request):
+    err = _validate_name(name)
+    if err:
+        return HTMLResponse(err, status_code=400)
+
+    stack = stack_service.get_stack(name)
+    if stack is None:
+        return HTMLResponse(f'<div class="output-error">Stack "{escape(name)}" not found.</div>', status_code=404)
+
+    if stack.is_self:
+        return HTMLResponse('<div class="output-error">Cannot modify stack-manager from within itself.</div>')
+
+    task = await mgmt_service.upgrade_stack(name)
+    return templates.TemplateResponse("partials/output.html", {
+        "request": request,
+        "task_id": task.task_id,
+        "command": f"upgrade {name}",
+    })
+
+
 @router.post("/api/stacks/upgrade", response_class=HTMLResponse)
 async def upgrade_all(request: Request):
     task = await mgmt_service.upgrade_all()

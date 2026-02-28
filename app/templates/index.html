@@ -17,6 +17,14 @@
             Cleanup
         </button>
     </div>
+    <button id="layout-toggle" class="outline secondary" onclick="toggleLayout()" title="Toggle grid/list layout">
+        <svg id="layout-icon-grid" viewBox="0 0 16 16" fill="currentColor" width="14" height="14">
+            <path d="M1 1h6v6H1V1zm8 0h6v6H9V1zM1 9h6v6H1V9zm8 0h6v6H9V9z"/>
+        </svg>
+        <svg id="layout-icon-list" viewBox="0 0 16 16" fill="currentColor" width="14" height="14" style="display:none">
+            <path d="M1 2h14v2H1V2zm0 5h14v2H1V7zm0 5h14v2H1v-2z"/>
+        </svg>
+    </button>
 </section>
 
 <section id="stack-list" hx-get="/api/stacks" hx-trigger="load, every 10s" hx-swap="morph:innerHTML">

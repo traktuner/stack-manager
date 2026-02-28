@@ -310,6 +310,33 @@ document.body.addEventListener("refresh", function () {
     refreshStacks();
 });
 
+// Layout toggle (list/grid)
+function toggleLayout() {
+    var list = document.getElementById("stack-list");
+    var iconGrid = document.getElementById("layout-icon-grid");
+    var iconList = document.getElementById("layout-icon-list");
+    if (!list) return;
+
+    var isGrid = list.classList.toggle("layout-grid");
+    localStorage.setItem("layout", isGrid ? "grid" : "list");
+
+    if (iconGrid) iconGrid.style.display = isGrid ? "none" : "";
+    if (iconList) iconList.style.display = isGrid ? "" : "none";
+}
+
+// Restore layout preference on load
+(function () {
+    var pref = localStorage.getItem("layout");
+    if (pref === "grid") {
+        var list = document.getElementById("stack-list");
+        if (list) list.classList.add("layout-grid");
+        var iconGrid = document.getElementById("layout-icon-grid");
+        var iconList = document.getElementById("layout-icon-list");
+        if (iconGrid) iconGrid.style.display = "none";
+        if (iconList) iconList.style.display = "";
+    }
+})();
+
 // Container upgrade button: add .updating class on parent pill during request
 document.body.addEventListener("htmx:beforeRequest", function (e) {
     if (e.detail.elt && e.detail.elt.classList.contains("container-update-btn")) {

@@ -298,6 +298,66 @@ async def upgrade_all() -> process_service.TaskState:
     return await process_service.run_script(_script, "__upgrade__", "upgrade all")
 
 
+async def upgrade_stack(name: str) -> process_service.TaskState:
+    """Upgrade a single stack (pull + recreate all services)."""
+    stack = stack_service.get_stack(name)
+    if stack is None:
+        return await _error_task(f'Stack "{name}" not found.')
+
+    cwd = _stack_dir(name)
+
+    async def _script(task: process_service.TaskState) -> int:
+        task.lines.append(f"[{name}] Upgrading stack...\n")
+
+        if stack.mode == "pass":
+            task.lines.append("Checking pass-cli session...\n")
+            code = await process_service.run_subprocess(
+                ["pass-cli", "test"], cwd, task,
+            )
+            if code != 0:
+                task.lines.append("Error: pass-cli session not active.\n")
+                return 1
+
+            template = Path(cwd) / ".env.template"
+            if not await _validate_secrets(template, cwd, task):
+                task.lines.append(f"Secret validation failed for {name}. Aborting.\n")
+                return 1
+
+            task.lines.append(f"Pulling images...\n")
+            await process_service.run_subprocess(
+                _pass_compose_args("pull"), cwd, task,
+                suppress_env_warnings=True,
+            )
+
+            task.lines.append(f"Recreating containers...\n")
+            code = await process_service.run_subprocess(
+                _pass_compose_args("up", "-d", "--remove-orphans"), cwd, task,
+            )
+        else:
+            task.lines.append(f"Pulling images...\n")
+            await process_service.run_subprocess(
+                _compose_args("pull"), cwd, task,
+                suppress_env_warnings=True,
+            )
+
+            task.lines.append(f"Recreating containers...\n")
+            code = await process_service.run_subprocess(
+                _compose_args("up", "-d", "--remove-orphans"), cwd, task,
+            )
+
+        if code == 0:
+            task.lines.append("Cleaning up old images...\n")
+            await process_service.run_subprocess(
+                ["docker", "image", "prune", "-f"], cwd, task,
+            )
+            task.lines.append(f"[{name}] Upgrade complete.\n")
+        else:
+            task.lines.append(f"[{name}] Upgrade failed.\n")
+        return code
+
+    return await process_service.run_script(_script, name, f"upgrade {name}")
+
+
 async def upgrade_service(stack_name: str, service_name: str) -> process_service.TaskState:
     """Upgrade a single service within a stack (pull + recreate)."""
     stack = stack_service.get_stack(stack_name)

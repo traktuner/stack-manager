@@ -63,11 +63,17 @@ header::after {
     50% { opacity: 1; transform: scale(1.08); }
 }
 
-/* Stack grid layout */
+/* Stack layout — list (default) */
 #stack-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+/* Stack layout — grid (opt-in) */
+#stack-list.layout-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 0.4rem;
 }
 
 /* Stack cards — glassmorphism */
@@ -343,6 +349,8 @@ header::after {
 }
 
 .badge-update {
+    all: unset;
+    cursor: pointer;
     display: inline-flex;
     align-items: center;
     gap: 0.2rem;
@@ -352,6 +360,12 @@ header::after {
     border-radius: 3px;
     background: rgba(52, 152, 219, 0.1);
     border: 1px solid rgba(52, 152, 219, 0.2);
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.badge-update:hover {
+    background: rgba(52, 152, 219, 0.2);
+    border-color: rgba(52, 152, 219, 0.4);
 }
 
 .badge-update svg {
@@ -530,6 +544,15 @@ header::after {
     transform: translateY(-1px);
 }
 
+#layout-toggle {
+    padding: 0.4rem 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    float: right;
+    margin-top: 0.25rem;
+}
+
 /* Header badges */
 nav kbd {
     font-size: 0.7rem;
@@ -617,6 +640,22 @@ nav kbd {
 
     .stack-name {
         font-size: 0.85rem;
+    }
+
+    .container-update-btn,
+    .container-logs-btn {
+        width: 28px;
+        height: 28px;
+    }
+
+    .container-update-btn svg,
+    .container-logs-btn svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    .container-pill {
+        padding: 0.2rem 0.5rem;
     }
 
     #output-modal,

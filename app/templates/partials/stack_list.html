@@ -26,13 +26,18 @@
             {% else %}
                 <span class="badge-stopped">stopped</span>
             {% endif %}
-            {% if stack.status.updates %}
-                <span class="badge-update" title="{{ stack.status.updates }} update{{ 's' if stack.status.updates > 1 else '' }} available">
+            {% if stack.status.updates and not stack.is_self %}
+                <button class="badge-update"
+                        title="{{ stack.status.updates }} update{{ 's' if stack.status.updates > 1 else '' }} available — click to upgrade"
+                        hx-post="/api/stacks/{{ stack.name }}/upgrade"
+                        hx-target="#modal-content"
+                        hx-swap="innerHTML"
+                        data-confirm="Pull latest images and recreate all containers in {{ stack.name }}?">
                     <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12">
                         <path d="M8 1a7 7 0 1 0 7 7h-1.5A5.5 5.5 0 1 1 8 2.5V5l4-3-4-3v2z"/>
                     </svg>
                     {{ stack.status.updates }}
-                </span>
+                </button>
             {% endif %}
             {% if stack.is_self %}
                 <button disabled title="Cannot control stack-manager from within itself">self</button>
