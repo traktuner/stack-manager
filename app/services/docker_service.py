@@ -78,6 +78,13 @@ def get_stack_status(service_names: list[str], all_statuses: dict[str, Container
     else:
         state = "stopped"
 
+    # Check if any running container is unhealthy
+    has_unhealthy = any(
+        c["health"] == "unhealthy" for c in containers if c["status"] == "running"
+    )
+    if has_unhealthy and state in ("running", "partial"):
+        state = "unhealthy"
+
     return {"state": state, "running": running, "total": total, "containers": containers}
 
 

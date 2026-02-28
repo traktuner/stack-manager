@@ -107,7 +107,8 @@ header::after {
 #stack-list .stack-card:nth-child(n+9) { animation-delay: 0.24s; }
 
 .stack-running:hover,
-.stack-partial:hover {
+.stack-partial:hover,
+.stack-unhealthy:hover {
     transform: translateY(-1px);
 }
 
@@ -117,6 +118,10 @@ header::after {
 
 .stack-partial:hover {
     box-shadow: 0 2px 12px rgba(243, 156, 18, 0.15);
+}
+
+.stack-unhealthy:hover {
+    box-shadow: 0 2px 12px rgba(231, 76, 60, 0.15);
 }
 
 .stack-header {
@@ -223,7 +228,9 @@ header::after {
 .container-pill[data-tooltip] {
     border-bottom: none;
 }
-.container-pill[data-tooltip]::before,
+.container-pill[data-tooltip]::before {
+    content: none;
+}
 .container-pill[data-tooltip]::after {
     font-size: 0.65rem;
     animation: none;
@@ -309,6 +316,11 @@ header::after {
     font-size: 0.75rem;
 }
 
+.badge-unhealthy {
+    color: #e74c3c;
+    font-size: 0.75rem;
+}
+
 .badge-stopped {
     color: #95a5a6;
     font-size: 0.75rem;
@@ -349,6 +361,10 @@ header::after {
 
 .stack-partial {
     border-left: 3px solid #f39c12;
+}
+
+.stack-unhealthy {
+    border-left: 3px solid #e74c3c;
 }
 
 .stack-stopped {

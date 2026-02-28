@@ -1,6 +1,6 @@
 {% set ns = namespace(shown_divider=false, has_active=false) %}
 {% for stack in stacks %}
-    {% if stack.status.state in ("running", "partial") %}
+    {% if stack.status.state in ("running", "partial", "unhealthy") %}
         {% set ns.has_active = true %}
     {% endif %}
 {% endfor %}
@@ -18,7 +18,9 @@
                 {% if stack.mode == "pass" %}
                     <kbd class="mode-pass">pass</kbd>
                 {% endif %}
-                {% if stack.status.state == "running" %}
+                {% if stack.status.state == "unhealthy" %}
+                    <span class="badge-unhealthy">{{ stack.status.running }}/{{ stack.status.total }}</span>
+                {% elif stack.status.state == "running" %}
                     <span class="badge-running">{{ stack.status.running }}/{{ stack.status.total }}</span>
                 {% elif stack.status.state == "partial" %}
                     <span class="badge-partial">{{ stack.status.running }}/{{ stack.status.total }}</span>
@@ -32,7 +34,7 @@
                 <button disabled title="Cannot control stack-manager from within itself">self</button>
             {% elif stack.busy %}
                 <button aria-busy="true" disabled>busy</button>
-            {% elif stack.status.state in ("running", "partial") %}
+            {% elif stack.status.state in ("running", "partial", "unhealthy") %}
                 <button class="outline contrast"
                         hx-post="/api/stacks/{{ stack.name }}/stop"
                         hx-target="#modal-content"
