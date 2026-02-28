@@ -3,6 +3,11 @@ import re
 import shutil
 
 DOCKER_APPS_PATH = os.getenv("DOCKER_APPS_PATH", "/data/docker-apps")
+if not os.path.isdir(DOCKER_APPS_PATH):
+    raise SystemExit(
+        f"DOCKER_APPS_PATH={DOCKER_APPS_PATH!r} does not exist or is not a directory. "
+        "Mount your stacks directory and set DOCKER_APPS_PATH accordingly."
+    )
 SELF_STACK_NAME = "stack-manager"
 GIT_COMMIT = os.getenv("GIT_COMMIT", "dev")[:7]
 

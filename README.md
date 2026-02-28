@@ -108,12 +108,12 @@ volumes:
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `DOCKER_APPS_PATH` | No | `/data/docker-apps` | Directory containing your Docker Compose stacks |
+| `DOCKER_APPS_PATH` | Yes | `/data/docker-apps` | Directory containing your Docker Compose stacks (must be mounted) |
 | `PROTON_PASS_KEY_PROVIDER` | No | `keyring` | How pass-cli stores encryption keys (see below). Only needed for Proton Pass integration |
 | `XDG_CONFIG_HOME` | No | — | Set to `/root/.local/share/config` when using pass-cli with a volume. Only needed for Proton Pass integration |
 | `GIT_TOKEN` | No | — | GitHub Personal Access Token for pulling private repos (see below) |
 
-> **All environment variables are optional.** Stack Manager works out of the box with just the Docker socket and a stacks directory mounted. The defaults are sufficient for managing plain Docker Compose stacks without Proton Pass or private repos.
+> **Minimal setup:** Only `DOCKER_APPS_PATH` (mounted volume) and the Docker socket are required. All other variables are optional and only needed for Proton Pass or private repo support.
 
 #### `PROTON_PASS_KEY_PROVIDER`
 
