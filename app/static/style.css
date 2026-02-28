@@ -68,7 +68,6 @@ header::after {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 0.4rem;
-    align-items: start;
 }
 
 /* Stack cards — glassmorphism */
@@ -144,6 +143,11 @@ header::after {
     font-size: 0.9rem;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.stack-info small {
+    flex-shrink: 0;
     white-space: nowrap;
 }
 
@@ -228,20 +232,22 @@ header::after {
     transform: translateY(-1px);
 }
 
-/* Pico tooltip overrides for container pills */
-.container-pill[data-tooltip] {
+/* Pico tooltip overrides */
+.container-pill[data-tooltip],
+.stack-info strong[data-tooltip] {
     border-bottom: none;
+    cursor: default;
 }
-.container-pill[data-tooltip]::before {
+.container-pill[data-tooltip]::before,
+.stack-info strong[data-tooltip]::before {
     content: none;
 }
-.container-pill[data-tooltip]::after {
+.container-pill[data-tooltip]::after,
+.stack-info strong[data-tooltip]::after {
     font-size: 0.65rem;
     animation: none;
     transition: none;
     pointer-events: none;
-}
-.container-pill[data-tooltip]::after {
     background: var(--pico-card-background-color);
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
