@@ -26,6 +26,14 @@
             {% else %}
                 <span class="badge-stopped">stopped</span>
             {% endif %}
+            {% if stack.status.updates %}
+                <span class="badge-update" title="{{ stack.status.updates }} update{{ 's' if stack.status.updates > 1 else '' }} available">
+                    <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12">
+                        <path d="M8 1a7 7 0 1 0 7 7h-1.5A5.5 5.5 0 1 1 8 2.5V5l4-3-4-3v2z"/>
+                    </svg>
+                    {{ stack.status.updates }}
+                </span>
+            {% endif %}
             {% if stack.is_self %}
                 <button disabled title="Cannot control stack-manager from within itself">self</button>
             {% elif stack.busy %}
@@ -48,7 +56,7 @@
         <summary class="stack-details-toggle">{{ stack.status.containers|length }} containers</summary>
         <div class="stack-containers">
             {% for c in stack.status.containers %}
-            <span class="container-pill container-{{ c.status }}" data-tooltip="{{ c.image }}">
+            <span class="container-pill container-{{ c.status }}{% if c.update_available %} container-update-available{% endif %}" data-tooltip="{{ c.image }}">
                 <span class="container-name" title="{{ c.name }}">{{ c.name }}</span>
                 {% if c.health != "n/a" %}<span class="health-{{ c.health }}">{{ c.health }}</span>{% endif %}
                 <button class="container-logs-btn"

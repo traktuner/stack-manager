@@ -14,6 +14,7 @@ class ContainerStatus:
     health: str  # healthy, unhealthy, starting, none, n/a
     image: str
     started_at: str
+    update_available: bool = False
 
 
 _client: docker.DockerClient | None = None
@@ -42,12 +43,24 @@ def get_all_container_statuses() -> dict[str, ContainerStatus]:
         tags = c.image.tags if c.image.tags else []
         image = tags[0] if tags else c.attrs.get("Config", {}).get("Image", "unknown")
 
+        # Check if a newer image exists locally for this container
+        update_available = False
+        if c.status == "running":
+            image_ref = c.attrs.get("Config", {}).get("Image", "")
+            if image_ref:
+                try:
+                    current = client.images.get(image_ref)
+                    update_available = current.id != c.image.id
+                except Exception:
+                    pass
+
         result[c.name] = ContainerStatus(
             name=c.name,
             status=c.status,
             health=health,
             image=image,
             started_at=c.attrs.get("State", {}).get("StartedAt", ""),
+            update_available=update_available,
         )
     return result
 
@@ -68,6 +81,7 @@ def get_stack_status(service_names: list[str], all_statuses: dict[str, Container
             "status": cs.status if cs else "not found",
             "health": cs.health if cs else "n/a",
             "image": cs.image if cs else "unknown",
+            "update_available": cs.update_available if cs else False,
         })
 
     total = len(service_names)
@@ -85,7 +99,9 @@ def get_stack_status(service_names: list[str], all_statuses: dict[str, Container
     if has_unhealthy and state in ("running", "partial"):
         state = "unhealthy"
 
-    return {"state": state, "running": running, "total": total, "containers": containers}
+    updates = sum(1 for c in containers if c["update_available"])
+
+    return {"state": state, "running": running, "total": total, "containers": containers, "updates": updates}
 
 
 def get_container_logs(name: str, tail: int = 100) -> str:

@@ -298,6 +298,11 @@ header::after {
     animation: pulse-border 1s ease-in-out infinite;
 }
 
+.container-update-available {
+    border-left-color: #3498db !important;
+    background: rgba(52, 152, 219, 0.08);
+}
+
 .container-running {
     border-left: 3px solid #2ecc71;
 }
@@ -335,6 +340,22 @@ header::after {
 .badge-stopped {
     color: #95a5a6;
     font-size: 0.75rem;
+}
+
+.badge-update {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    color: #3498db;
+    font-size: 0.7rem;
+    padding: 0.05rem 0.35rem;
+    border-radius: 3px;
+    background: rgba(52, 152, 219, 0.1);
+    border: 1px solid rgba(52, 152, 219, 0.2);
+}
+
+.badge-update svg {
+    animation: spin 2s linear infinite;
 }
 
 /* Mode badge — only "pass" is shown */
