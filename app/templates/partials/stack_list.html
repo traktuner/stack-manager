@@ -12,24 +12,20 @@
 {% endif %}
 <article id="stack-{{ stack.name }}" class="stack-card stack-{{ stack.status.state }}">
     <div class="stack-header">
-        <div class="stack-info">
-            <strong title="{{ stack.name }}">{{ stack.name }}</strong>
-            <small>
-                {% if stack.mode == "pass" %}
-                    <kbd class="mode-pass">pass</kbd>
-                {% endif %}
-                {% if stack.status.state == "unhealthy" %}
-                    <span class="badge-unhealthy">{{ stack.status.running }}/{{ stack.status.total }}</span>
-                {% elif stack.status.state == "running" %}
-                    <span class="badge-running">{{ stack.status.running }}/{{ stack.status.total }}</span>
-                {% elif stack.status.state == "partial" %}
-                    <span class="badge-partial">{{ stack.status.running }}/{{ stack.status.total }}</span>
-                {% else %}
-                    <span class="badge-stopped">stopped</span>
-                {% endif %}
-            </small>
-        </div>
-        <div class="stack-actions">
+        <strong class="stack-name" title="{{ stack.name }}">{{ stack.name }}</strong>
+        <div class="stack-controls">
+            {% if stack.mode == "pass" %}
+                <kbd class="mode-pass">pass</kbd>
+            {% endif %}
+            {% if stack.status.state == "unhealthy" %}
+                <span class="badge-unhealthy">{{ stack.status.running }}/{{ stack.status.total }}</span>
+            {% elif stack.status.state == "running" %}
+                <span class="badge-running">{{ stack.status.running }}/{{ stack.status.total }}</span>
+            {% elif stack.status.state == "partial" %}
+                <span class="badge-partial">{{ stack.status.running }}/{{ stack.status.total }}</span>
+            {% else %}
+                <span class="badge-stopped">stopped</span>
+            {% endif %}
             {% if stack.is_self %}
                 <button disabled title="Cannot control stack-manager from within itself">self</button>
             {% elif stack.busy %}
