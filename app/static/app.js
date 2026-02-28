@@ -88,6 +88,21 @@ document.body.addEventListener("htmx:confirm", function (e) {
     });
 });
 
+// Animated close for stack details
+document.addEventListener("click", function (e) {
+    var toggle = e.target.closest(".stack-details-toggle");
+    if (!toggle) return;
+    var details = toggle.closest(".stack-details");
+    if (!details || !details.open || details.classList.contains("closing")) return;
+
+    e.preventDefault();
+    details.classList.add("closing");
+    setTimeout(function () {
+        details.removeAttribute("open");
+        details.classList.remove("closing");
+    }, 1000);
+});
+
 // Preserve open <details> state before idiomorph swap
 var _openDetails = [];
 document.body.addEventListener("htmx:beforeSwap", function (e) {
