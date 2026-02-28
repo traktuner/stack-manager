@@ -60,6 +60,26 @@ Stack Manager scans a directory of Docker Compose projects (stacks). Each stack 
 
 ## Deployment
 
+### Docker Images
+
+Images are published to GitHub Container Registry and built for **linux/amd64** and **linux/arm64**.
+
+```
+ghcr.io/traktuner/stack-manager
+```
+
+| Tag | Example | Description |
+|---|---|---|
+| `latest` | `:latest` | Auto-built from `master` on every push — always up-to-date, but may contain unreleased changes |
+| `vX.Y.Z` | `:v1.0.0` | Pinned release — recommended for production, won't change after publish |
+| `vX.Y` | `:v1.0` | Tracks the latest patch within a minor version (e.g. `v1.0` → `v1.0.2`) |
+| `vX` | `:v1` | Tracks the latest minor+patch within a major version |
+| `sha-<hash>` | `:sha-269ffd2` | Pinned to a specific commit — useful for debugging or rollback |
+
+> **Recommendation:** Use a versioned tag (`:v1.0.0` or `:v1`) for stable deployments. Use `:latest` if you always want the newest build and are comfortable with potential breaking changes.
+
+### Compose Example
+
 ```yaml
 services:
   stack-manager:
@@ -74,7 +94,6 @@ services:
       - pass-cli-data:/root/.local/share        # for Proton Pass session persistence
     environment:
       - DOCKER_APPS_PATH=/data/docker-apps
-      - PASS_VAULT=your-vault-name               # your Proton Pass vault name
       - PROTON_PASS_KEY_PROVIDER=fs              # required for Docker
       - XDG_CONFIG_HOME=/root/.local/share/config
       - GIT_TOKEN=ghp_your_github_token          # for private repos (optional)
@@ -83,23 +102,16 @@ volumes:
   pass-cli-data:
 ```
 
-> **Without Proton Pass?** If you don't use Proton Pass, you can omit `PASS_VAULT`, `PROTON_PASS_KEY_PROVIDER`, `XDG_CONFIG_HOME`, and the `pass-cli-data` volume. Stacks will use `.env` files or run without environment configuration.
+> **Without Proton Pass?** If you don't use Proton Pass, you can omit `PROTON_PASS_KEY_PROVIDER`, `XDG_CONFIG_HOME`, and the `pass-cli-data` volume. Stacks will use `.env` files or run without environment configuration.
 
 ### Environment Variables
 
 | Variable | Default | Description |
 |---|---|---|
 | `DOCKER_APPS_PATH` | `/data/docker-apps` | Directory containing your Docker Compose stacks |
-| `PASS_VAULT` | — | Name of your Proton Pass vault for secret lookups (see below) |
 | `PROTON_PASS_KEY_PROVIDER` | `keyring` | How pass-cli stores encryption keys (see below) |
 | `XDG_CONFIG_HOME` | — | Set to `/root/.local/share/config` when using pass-cli with a volume |
 | `GIT_TOKEN` | — | GitHub Personal Access Token for pulling private repos (see below) |
-
-#### `PASS_VAULT`
-
-The name of your personal Proton Pass vault that contains the secrets referenced in `.env.template` files. This is **not** a fixed default — you must set it to the vault name you created in your Proton Pass account.
-
-Secrets in `.env.template` are referenced as `pass://<vault>/<item>/<field>`, where `<vault>` matches this variable.
 
 #### `PROTON_PASS_KEY_PROVIDER`
 
