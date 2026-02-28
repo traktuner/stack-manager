@@ -13,7 +13,7 @@
             Update
         </button>
         <button class="secondary outline" hx-post="/api/cleanup" hx-target="#modal-content" hx-swap="innerHTML"
-                hx-confirm="Run docker system prune? This removes unused images and containers (volumes are preserved).">
+                data-confirm="Run docker system prune? This removes unused images and containers (volumes are preserved).">
             Cleanup
         </button>
     </div>

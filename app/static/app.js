@@ -78,11 +78,12 @@ document.addEventListener("keydown", function (e) {
     }
 });
 
-// Override HTMX confirm with custom dialog
+// Override HTMX confirm with custom dialog (uses data-confirm instead of hx-confirm)
 document.body.addEventListener("htmx:confirm", function (e) {
-    if (!e.detail.question) return;
+    var question = e.target.getAttribute("data-confirm");
+    if (!question) return;
     e.preventDefault();
-    showConfirm(e.detail.question, function () {
+    showConfirm(question, function () {
         e.detail.issueRequest();
     });
 });

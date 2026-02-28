@@ -66,7 +66,7 @@
                         hx-post="/api/stacks/{{ stack.name }}/services/{{ stack.service_map[c.name] }}/upgrade"
                         hx-target="#modal-content"
                         hx-swap="innerHTML"
-                        hx-confirm="Pull latest image and recreate {{ c.name }}?">
+                        data-confirm="Pull latest image and recreate {{ c.name }}?">
                     <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12">
                         <path d="M8 1a7 7 0 1 0 7 7h-1.5A5.5 5.5 0 1 1 8 2.5V5l4-3-4-3v2z"/>
                     </svg>
