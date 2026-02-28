@@ -100,7 +100,7 @@ document.addEventListener("click", function (e) {
     setTimeout(function () {
         details.removeAttribute("open");
         details.classList.remove("closing");
-    }, 1000);
+    }, 800);
 });
 
 // Preserve open <details> state before idiomorph swap
