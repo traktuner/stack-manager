@@ -106,12 +106,14 @@ volumes:
 
 ### Environment Variables
 
-| Variable | Default | Description |
-|---|---|---|
-| `DOCKER_APPS_PATH` | `/data/docker-apps` | Directory containing your Docker Compose stacks |
-| `PROTON_PASS_KEY_PROVIDER` | `keyring` | How pass-cli stores encryption keys (see below) |
-| `XDG_CONFIG_HOME` | — | Set to `/root/.local/share/config` when using pass-cli with a volume |
-| `GIT_TOKEN` | — | GitHub Personal Access Token for pulling private repos (see below) |
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `DOCKER_APPS_PATH` | No | `/data/docker-apps` | Directory containing your Docker Compose stacks |
+| `PROTON_PASS_KEY_PROVIDER` | No | `keyring` | How pass-cli stores encryption keys (see below). Only needed for Proton Pass integration |
+| `XDG_CONFIG_HOME` | No | — | Set to `/root/.local/share/config` when using pass-cli with a volume. Only needed for Proton Pass integration |
+| `GIT_TOKEN` | No | — | GitHub Personal Access Token for pulling private repos (see below) |
+
+> **All environment variables are optional.** Stack Manager works out of the box with just the Docker socket and a stacks directory mounted. The defaults are sufficient for managing plain Docker Compose stacks without Proton Pass or private repos.
 
 #### `PROTON_PASS_KEY_PROVIDER`
 
@@ -177,6 +179,7 @@ API_KEY=pass://your-vault-name/my-app/api-key
 | `GET` | `/api/status` | Status JSON (pass-cli, stack counts) |
 | `POST` | `/api/stacks/{name}/start` | Start a stack |
 | `POST` | `/api/stacks/{name}/stop` | Stop a stack |
+| `POST` | `/api/stacks/{name}/upgrade` | Upgrade a single stack (pull + recreate) |
 | `POST` | `/api/stacks/{stack}/services/{service}/upgrade` | Upgrade a single service |
 | `POST` | `/api/stacks/upgrade` | Upgrade all active stacks |
 | `POST` | `/api/stacks/pull` | Pull images for active stacks |
