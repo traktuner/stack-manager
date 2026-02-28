@@ -189,6 +189,19 @@ API_KEY=pass://your-vault-name/my-app/api-key
 | `GET` | `/api/containers/{name}/logs` | Container logs (JSON, `?lines=N`) |
 | `GET` | `/api/stream/{id}` | SSE command output stream |
 
+## Security
+
+Stack Manager is designed to run on **trusted internal networks** behind a reverse proxy with authentication (e.g., Traefik + Authelia, Nginx + OAuth2 Proxy).
+
+### Important considerations
+
+- **No built-in authentication** — the app does not implement its own auth layer. Protect it with your reverse proxy or VPN. Do not expose it directly to the internet.
+- **Docker socket access** — required for container management. The app needs read/write access to `/var/run/docker.sock`. This grants full Docker API control, so treat the container as privileged.
+- **Runs as root** — necessary to access the Docker socket and mounted volumes with varying ownership. Consider running behind a restricted network segment.
+- **Input validation** — all stack/service/container names are validated against a strict allowlist (`^[a-zA-Z0-9][a-zA-Z0-9_.-]*$`). Path traversal and command injection are prevented by design.
+- **No shell execution** — all subprocess calls use exec-style argument lists, never `shell=True`.
+- **Template escaping** — Jinja2 autoescape is enabled globally. User-facing output is HTML-escaped.
+
 ## Tech Stack
 
 - **Backend:** Python 3.12, FastAPI, Uvicorn

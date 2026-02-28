@@ -250,16 +250,13 @@ function showPassLogin() {
             body: "email=" + encodeURIComponent(email),
         })
             .then(function (r) { return r.text(); })
+            .then(function (r) { return r.text(); })
             .then(function (html) {
                 if (document.getElementById("modal-content")) {
                     document.getElementById("modal-content").innerHTML = html;
-                    var scripts = document.getElementById("modal-content").querySelectorAll("script");
-                    scripts.forEach(function (s) {
-                        var newScript = document.createElement("script");
-                        newScript.textContent = s.textContent;
-                        document.body.appendChild(newScript);
-                        document.body.removeChild(newScript);
-                    });
+                    // Extract task_id from connectStream() call in response and invoke it safely
+                    var m = html.match(/connectStream\("([^"]+)"\)/);
+                    if (m) connectStream(m[1]);
                 }
             })
             .catch(function () {
