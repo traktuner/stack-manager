@@ -219,14 +219,14 @@ header::after {
 .stack-details.closing .container-pill {
     animation: none;
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity 0.1s ease;
 }
 
 .stack-details.closing .stack-containers {
     max-height: 0;
     opacity: 0;
     margin-top: 0;
-    transition-delay: 0.2s;
+    transition-delay: 0.1s;
 }
 
 /* Container pills fade in after expand (keyframes restart on every toggle) */
@@ -240,13 +240,13 @@ header::after {
 }
 
 .stack-details[open] .container-pill {
-    animation: pillFadeIn 0.25s ease forwards;
-    animation-delay: 0.55s;
+    animation: pillFadeIn 0.15s ease forwards;
+    animation-delay: 0.45s;
 }
 
-.stack-details[open] .container-pill:nth-child(2) { animation-delay: 0.6s; }
-.stack-details[open] .container-pill:nth-child(3) { animation-delay: 0.65s; }
-.stack-details[open] .container-pill:nth-child(n+4) { animation-delay: 0.7s; }
+.stack-details[open] .container-pill:nth-child(2) { animation-delay: 0.48s; }
+.stack-details[open] .container-pill:nth-child(3) { animation-delay: 0.51s; }
+.stack-details[open] .container-pill:nth-child(n+4) { animation-delay: 0.54s; }
 
 /* Container pills */
 .stack-containers {
