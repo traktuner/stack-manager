@@ -13,7 +13,7 @@
 <article id="stack-{{ stack.name }}" class="stack-card stack-{{ stack.status.state }}">
     <div class="stack-header">
         <div class="stack-info">
-            <strong>{{ stack.name }}</strong>
+            <strong title="{{ stack.name }}">{{ stack.name }}</strong>
             <small>
                 {% if stack.mode == "pass" %}
                     <kbd class="mode-pass">pass</kbd>
