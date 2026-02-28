@@ -8,6 +8,8 @@ from dataclasses import dataclass, field
 from typing import Callable, Awaitable
 
 ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
+# Docker Compose warnings about unset env vars (expected for pass mode stacks)
+_BLANK_STRING_RE = re.compile(r'.*variable is not set\. Defaulting to a blank string\.')
 
 # Per-stack locks to prevent concurrent operations
 _stack_locks: dict[str, asyncio.Lock] = {}
@@ -81,7 +83,9 @@ def is_stack_busy(stack_name: str) -> bool:
     return lock is not None and lock.locked()
 
 
-async def run_subprocess(args: list[str], cwd: str, task: TaskState) -> int:
+async def run_subprocess(
+    args: list[str], cwd: str, task: TaskState, *, suppress_env_warnings: bool = False,
+) -> int:
     """Run a subprocess, streaming output into an existing TaskState. Returns exit code."""
     try:
         proc = await asyncio.create_subprocess_exec(
@@ -95,6 +99,8 @@ async def run_subprocess(args: list[str], cwd: str, task: TaskState) -> int:
             if not line:
                 break
             text = ANSI_RE.sub("", line.decode("utf-8", errors="replace"))
+            if suppress_env_warnings and _BLANK_STRING_RE.match(text.strip()):
+                continue
             task.lines.append(text)
         await proc.wait()
         return proc.returncode

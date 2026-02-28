@@ -215,6 +215,7 @@ async def pull_images() -> process_service.TaskState:
             code = await process_service.run_subprocess(
                 _compose_args("pull", "-q"),
                 _stack_dir(s.name), task,
+                suppress_env_warnings=True,
             )
             if code == 0:
                 task.lines.append(f"  {s.name} done\n")
@@ -312,10 +313,12 @@ async def upgrade_service(stack_name: str, service_name: str) -> process_service
         if stack.mode == "pass":
             code = await process_service.run_subprocess(
                 _pass_compose_args("pull", service_name), cwd, task,
+                suppress_env_warnings=True,
             )
         else:
             code = await process_service.run_subprocess(
                 _compose_args("pull", service_name), cwd, task,
+                suppress_env_warnings=True,
             )
         if code != 0:
             task.lines.append(f"Pull failed for {service_name}.\n")
