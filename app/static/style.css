@@ -232,18 +232,22 @@ header::after {
     transform: translateY(-1px);
 }
 
+.container-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 160px;
+}
+
 /* Pico tooltip overrides */
-.container-pill[data-tooltip],
-.stack-info strong[data-tooltip] {
+.container-pill[data-tooltip] {
     border-bottom: none;
     cursor: default;
 }
-.container-pill[data-tooltip]::before,
-.stack-info strong[data-tooltip]::before {
+.container-pill[data-tooltip]::before {
     content: none;
 }
-.container-pill[data-tooltip]::after,
-.stack-info strong[data-tooltip]::after {
+.container-pill[data-tooltip]::after {
     font-size: 0.65rem;
     animation: none;
     transition: none;

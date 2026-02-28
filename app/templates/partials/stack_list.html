@@ -13,7 +13,7 @@
 <article id="stack-{{ stack.name }}" class="stack-card stack-{{ stack.status.state }}">
     <div class="stack-header">
         <div class="stack-info">
-            <strong data-tooltip="{{ stack.name }}">{{ stack.name }}</strong>
+            <strong title="{{ stack.name }}">{{ stack.name }}</strong>
             <small>
                 {% if stack.mode == "pass" %}
                     <kbd class="mode-pass">pass</kbd>
@@ -53,7 +53,7 @@
         <div class="stack-containers">
             {% for c in stack.status.containers %}
             <span class="container-pill container-{{ c.status }}" data-tooltip="{{ c.image }}">
-                <span class="container-name">{{ c.name }}</span>
+                <span class="container-name" title="{{ c.name }}">{{ c.name }}</span>
                 {% if c.health != "n/a" %}<span class="health-{{ c.health }}">{{ c.health }}</span>{% endif %}
                 <button class="container-logs-btn"
                         title="View logs for {{ c.name }}"
