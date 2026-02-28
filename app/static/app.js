@@ -16,6 +16,77 @@ function closeModal() {
     if (m) m.close();
 }
 
+// Custom confirm / prompt dialog
+var _confirmCallback = null;
+
+function showConfirm(message, onAccept, opts) {
+    opts = opts || {};
+    var dlg = document.getElementById("confirm-modal");
+    var msg = document.getElementById("confirm-message");
+    var input = document.getElementById("confirm-input");
+    var title = document.getElementById("confirm-title");
+    var okBtn = document.getElementById("confirm-ok-btn");
+    if (!dlg) return;
+    msg.textContent = message;
+    title.textContent = opts.title || "Confirm";
+    okBtn.textContent = opts.okLabel || "OK";
+    _confirmCallback = onAccept;
+    if (opts.prompt) {
+        input.style.display = "";
+        input.value = "";
+        input.placeholder = opts.placeholder || "";
+    } else {
+        input.style.display = "none";
+    }
+    dlg.showModal();
+    if (opts.prompt) {
+        input.focus();
+    } else {
+        okBtn.focus();
+    }
+}
+
+function acceptConfirm() {
+    var dlg = document.getElementById("confirm-modal");
+    var input = document.getElementById("confirm-input");
+    if (dlg) dlg.close();
+    if (_confirmCallback) {
+        var value = input && input.style.display !== "none" ? input.value : true;
+        _confirmCallback(value);
+    }
+    _confirmCallback = null;
+}
+
+function dismissConfirm() {
+    var dlg = document.getElementById("confirm-modal");
+    if (dlg) dlg.close();
+    _confirmCallback = null;
+}
+
+// Close confirm modal on backdrop click
+document.addEventListener("click", function (e) {
+    var dlg = document.getElementById("confirm-modal");
+    if (e.target === dlg) dismissConfirm();
+});
+
+// Submit confirm dialog on Enter key
+document.addEventListener("keydown", function (e) {
+    var dlg = document.getElementById("confirm-modal");
+    if (dlg && dlg.open && e.key === "Enter") {
+        e.preventDefault();
+        acceptConfirm();
+    }
+});
+
+// Override HTMX confirm with custom dialog
+document.body.addEventListener("htmx:confirm", function (e) {
+    if (!e.detail.question) return;
+    e.preventDefault();
+    showConfirm(e.detail.question, function () {
+        e.detail.issueRequest();
+    });
+});
+
 // Preserve open <details> state before idiomorph swap
 var _openDetails = [];
 document.body.addEventListener("htmx:beforeSwap", function (e) {
@@ -147,40 +218,40 @@ function updateStatus() {
 
 // Proton Pass login flow
 function showPassLogin() {
-    var email = prompt("Proton Mail address or username:");
-    if (!email) return;
+    showConfirm("Enter your Proton Mail address or username:", function (email) {
+        if (!email) return;
 
-    var modalContent = document.getElementById("modal-content");
-    if (modalContent) {
-        var safeEmail = email.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-        modalContent.innerHTML = '<div class="output-header"><code>$ pass-cli login ' + safeEmail + '</code><span id="output-status" aria-busy="true">running</span></div><pre class="output-pre" id="output-pre"></pre>';
-    }
-    openModal();
+        var modalContent = document.getElementById("modal-content");
+        if (modalContent) {
+            var safeEmail = email.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+            modalContent.innerHTML = '<div class="output-header"><code>$ pass-cli login ' + safeEmail + '</code><span id="output-status" aria-busy="true">running</span></div><pre class="output-pre" id="output-pre"></pre>';
+        }
+        openModal();
 
-    fetch("/api/pass/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: "email=" + encodeURIComponent(email),
-    })
-        .then(function (r) { return r.text(); })
-        .then(function (html) {
-            if (document.getElementById("modal-content")) {
-                document.getElementById("modal-content").innerHTML = html;
-                // Process any scripts in the response (for connectStream)
-                var scripts = document.getElementById("modal-content").querySelectorAll("script");
-                scripts.forEach(function (s) {
-                    var newScript = document.createElement("script");
-                    newScript.textContent = s.textContent;
-                    document.body.appendChild(newScript);
-                    document.body.removeChild(newScript);
-                });
-            }
+        fetch("/api/pass/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: "email=" + encodeURIComponent(email),
         })
-        .catch(function () {
-            if (document.getElementById("modal-content")) {
-                document.getElementById("modal-content").innerHTML = '<div class="output-error">Failed to start login.</div>';
-            }
-        });
+            .then(function (r) { return r.text(); })
+            .then(function (html) {
+                if (document.getElementById("modal-content")) {
+                    document.getElementById("modal-content").innerHTML = html;
+                    var scripts = document.getElementById("modal-content").querySelectorAll("script");
+                    scripts.forEach(function (s) {
+                        var newScript = document.createElement("script");
+                        newScript.textContent = s.textContent;
+                        document.body.appendChild(newScript);
+                        document.body.removeChild(newScript);
+                    });
+                }
+            })
+            .catch(function () {
+                if (document.getElementById("modal-content")) {
+                    document.getElementById("modal-content").innerHTML = '<div class="output-error">Failed to start login.</div>';
+                }
+            });
+    }, { title: "Proton Pass Login", prompt: true, placeholder: "user@proton.me", okLabel: "Login" });
 }
 
 // Container logs viewer

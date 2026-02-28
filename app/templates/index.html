@@ -62,4 +62,21 @@
         </div>
     </article>
 </dialog>
+
+<dialog id="confirm-modal">
+    <article>
+        <header>
+            <button aria-label="Close" rel="prev" onclick="dismissConfirm()"></button>
+            <span id="confirm-title">Confirm</span>
+        </header>
+        <div class="confirm-body">
+            <p id="confirm-message"></p>
+            <input type="text" id="confirm-input" placeholder="" autocomplete="off" style="display:none">
+            <footer class="confirm-actions">
+                <button class="outline secondary" onclick="dismissConfirm()">Cancel</button>
+                <button id="confirm-ok-btn" onclick="acceptConfirm()">OK</button>
+            </footer>
+        </div>
+    </article>
+</dialog>
 {% endblock %}
