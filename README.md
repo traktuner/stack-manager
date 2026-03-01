@@ -70,13 +70,14 @@ ghcr.io/traktuner/stack-manager
 
 | Tag | Example | Description |
 |---|---|---|
-| `latest` | `:latest` | Built monthly from `master` — a recent snapshot, but not tied to a specific release |
+| `latest` | `:latest` | Points to the most recent versioned release — updated on every `vX.Y.Z` tag push |
 | `vX.Y.Z` | `:v1.0.0` | Pinned release — recommended for production, won't change after publish |
 | `vX.Y` | `:v1.0` | Tracks the latest patch within a minor version (e.g. `v1.0` → `v1.0.2`) |
 | `vX` | `:v1` | Tracks the latest minor+patch within a major version |
+| `master` | `:master` | Built monthly from `master` — a recent snapshot, not tied to a specific release |
 | `sha-<hash>` | `:sha-269ffd2` | Built on every commit — pinned to a specific revision, useful for debugging or rollback |
 
-> **Recommendation:** Use a versioned tag (`:v1.0.0` or `:v1`) for stable deployments. Use `:latest` if you always want the newest build and are comfortable with potential breaking changes.
+> **Recommendation:** Use a versioned tag (`:v1.0.0` or `:v1`) for stable deployments. Use `:latest` for the newest release. Use `:master` if you want monthly snapshots from the main branch.
 
 ### Compose Example
 

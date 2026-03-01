@@ -213,8 +213,12 @@ function refreshStacks() {
 // Fetch and update status badges
 function updateStatus() {
     fetch("/api/status")
-        .then(function (r) { return r.json(); })
+        .then(function (r) {
+            if (!r.ok) throw new Error(r.status);
+            return r.json();
+        })
         .then(function (data) {
+            if (!data || !data.pass_cli) return;
             var passBadge = document.getElementById("pass-badge");
             var stacksBadge = document.getElementById("stacks-badge");
             var loginBtn = document.getElementById("pass-login-btn");
